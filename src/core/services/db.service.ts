@@ -33,6 +33,7 @@ const TBL_DOCTORS = 'doctors';
 const TBL_APPOINTMENTS = 'appointments';
 const TBL_USERS = 'users';
 const TBL_SALES = 'sales';
+const TBL_SETTINGS = 'settings';
 
 export interface User {
   id: string;
@@ -127,6 +128,7 @@ export class DbService {
   // Auth State
   currentUser = signal<User | null>(null);
   labSignature = signal<string | null>(null);
+  labLogo = signal<string | null>(null);
 
   // Data Signals
   users = signal<User[]>([]);
@@ -258,6 +260,7 @@ export class DbService {
     this.fetchAppointments();
     this.fetchUsers();
     this.fetchSales();
+    this.fetchSettings();
   }
 
   async fetchPatients() {
@@ -318,6 +321,27 @@ export class DbService {
       if (data) this.sales.set(data as Sale[]);
     } catch (e) {
       console.warn("No se pudo cargar la colección de ventas.");
+    }
+  }
+
+  async fetchSettings() {
+    try {
+      const { data, error } = await this.supabase
+        .from(TBL_SETTINGS)
+        .select('key, value');
+
+      if (data) {
+        data.forEach(setting => {
+          if (setting.key === 'lab_signature' && setting.value) {
+            this.labSignature.set(setting.value);
+          }
+          if (setting.key === 'lab_logo' && setting.value) {
+            this.labLogo.set(setting.value);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar la configuración.");
     }
   }
 
@@ -509,8 +533,26 @@ export class DbService {
     }
   }
 
-  setSignature(base64Image: string) {
+  async setSignature(base64Image: string) {
     this.labSignature.set(base64Image);
+    try {
+      await this.supabase
+        .from(TBL_SETTINGS)
+        .upsert({ key: 'lab_signature', value: base64Image, updated_at: new Date().toISOString() });
+    } catch (e) {
+      console.error("Error al guardar la firma en la base de datos:", e);
+    }
+  }
+
+  async setLogo(base64Image: string) {
+    this.labLogo.set(base64Image);
+    try {
+      await this.supabase
+        .from(TBL_SETTINGS)
+        .upsert({ key: 'lab_logo', value: base64Image, updated_at: new Date().toISOString() });
+    } catch (e) {
+      console.error("Error al guardar el logo en la base de datos:", e);
+    }
   }
 
   getRevenueHistory() {

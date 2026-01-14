@@ -707,6 +707,24 @@ export class ResultsComponent {
          ? `<img src="${sigImage}" style="height: 60px; display: block; margin: 0 auto 5px auto;" alt="Firma">`
          : `<div style="height:40px;"></div><span class="font-cursive text-xl text-slate-600 font-bold italic" style="font-family: 'Brush Script MT', cursive;">${res.createdBy || 'Bioquímico'}</span>`;
 
+      // Check for logo
+      const rawLogo = this.db.labLogo();
+      const logoImage = typeof rawLogo === 'string' ? rawLogo : null;
+      const logoHtml = logoImage
+         ? `<img src="${logoImage}" style="width: 100px; height: auto; display: block; margin-bottom: 5px;" alt="Logo">`
+         : `<!-- Custom BioSalud Logo SVG -->
+               <svg width="80" height="80" viewBox="0 0 100 100" class="mb-2">
+                  <path d="M50 90 C10 60 5 35 25 15 A20 20 0 0 1 50 35 A20 20 0 0 1 75 15 C95 35 90 60 50 90" fill="none" stroke="#1abc9c" stroke-width="3"/>
+                  <path d="M20 50 L35 50 L45 30 L55 70 L65 50 L80 50" fill="none" stroke="#1abc9c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+               </svg>`;
+
+      // Check for watermark (logo)
+      const watermarkHtml = logoImage
+         ? `<img src="${logoImage}" style="width: 100%; height: auto;" alt="Watermark">`
+         : `<svg viewBox="0 0 512 512" fill="#000" style="width: 100%;">
+               <path d="M416 96c-44.2 0-80 35.8-80 80 0-44.2-35.8-80-80-80s-80 35.8-80 80c0-44.2-35.8-80-80-80S16 131.8 16 176c0 88.4 128 240 240 240s240-151.6 240-240c0-44.2-35.8-80-80-80z"/>
+            </svg>`;
+
       // Only inject print script if downloading
       const printScript = mode === 'download'
          ? `<script>
@@ -785,9 +803,10 @@ export class ResultsComponent {
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                opacity: 0.05;
+                opacity: 0.08;
                 z-index: -1;
-                width: 400px;
+                width: 70%;
+                max-width: 600px;
             }
             @media print { 
                 body { padding: 0; margin: 20px; }
@@ -797,22 +816,16 @@ export class ResultsComponent {
       </head>
       <body>
         
-        <!-- Watermark (Heart Pulse SVG) -->
+        <!-- Watermark -->
         <div class="watermark">
-           <svg viewBox="0 0 512 512" fill="#000">
-              <path d="M416 96c-44.2 0-80 35.8-80 80 0-44.2-35.8-80-80-80s-80 35.8-80 80c0-44.2-35.8-80-80-80S16 131.8 16 176c0 88.4 128 240 240 240s240-151.6 240-240c0-44.2-35.8-80-80-80z"/>
-           </svg>
+           ${watermarkHtml}
         </div>
 
         <!-- HEADER -->
         <div class="flex justify-between items-start mb-6">
            <!-- Logo Section -->
            <div class="flex flex-col items-center w-1/4">
-              <!-- Custom BioSalud Logo SVG -->
-              <svg width="80" height="80" viewBox="0 0 100 100" class="mb-2">
-                 <path d="M50 90 C10 60 5 35 25 15 A20 20 0 0 1 50 35 A20 20 0 0 1 75 15 C95 35 90 60 50 90" fill="none" stroke="#1abc9c" stroke-width="3"/>
-                 <path d="M20 50 L35 50 L45 30 L55 70 L65 50 L80 50" fill="none" stroke="#1abc9c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              ${logoHtml}
               <div class="text-[#1abc9c] font-bold text-xs text-center leading-tight">
                  BioSalud<br>Huehuetenango
               </div>
