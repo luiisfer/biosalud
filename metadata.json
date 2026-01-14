@@ -1,0 +1,5 @@
+{
+  "name": "BioLab",
+  "description": "Un CRM integral impulsado por IA para laboratorios clínicos. Incluye gestión de pacientes, programación inteligente, CRM comercial para médicos, interpretación de resultados y reportes automatizados.",
+  "requestFramePermissions": []
+}
