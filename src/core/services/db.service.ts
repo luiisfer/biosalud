@@ -3,27 +3,11 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// --- CONFIGURACIÓN SUPABASE (SAFE ACCESS) ---
-const getEnv = (key: string, fallback: string): string => {
-  try {
-    // 1. Check process.env (Node/some builders)
-    if (typeof process !== 'undefined' && process.env && process.env[key]) {
-      return process.env[key] as string;
-    }
-    // 2. Check import.meta.env (Vite/modern builders)
-    const metaEnv = (import.meta as any).env;
-    if (metaEnv && metaEnv[key]) {
-      return metaEnv[key] as string;
-    }
-    // 3. Fallback
-    return fallback;
-  } catch {
-    return fallback;
-  }
-};
+import { environment } from '../../environments/environment';
 
-const SUPABASE_URL = getEnv('SUPABASE_URL', 'https://owdziohesmzyaolslcuh.supabase.co');
-const SUPABASE_KEY = getEnv('SUPABASE_ANON_KEY', 'sb_publishable_BoWyStwSL8QcEUyFrMqQOA_Jmag24pq');
+// --- CONFIGURACIÓN SUPABASE ---
+const SUPABASE_URL = environment.supabaseUrl;
+const SUPABASE_KEY = environment.supabaseAnonKey;
 
 // Table Names (Matching previous collection IDs for consistency)
 const TBL_PATIENTS = 'patients';

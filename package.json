@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "prebuild": "node scripts/set-env.js",
+    "start": "node scripts/set-env.js && ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
