@@ -45,6 +45,21 @@ export interface User {
   authId?: string;
 }
 
+export interface Methodology {
+  id: string;
+  name: string;
+  description: string;
+  createdBy?: string;
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+  description: string;
+  methodology_id: string;
+  createdBy?: string;
+}
+
 export interface Exam {
   id: string;
   name: string;
@@ -53,6 +68,7 @@ export interface Exam {
   description: string;
   range: string;
   unit: string;
+  profile_id?: string;
   createdBy?: string;
   lastModifiedBy?: string;
 }
@@ -101,6 +117,9 @@ export interface LabResult {
   status: 'Pendiente' | 'Finalizado';
   createdBy?: string;
   lastModifiedBy?: string;
+  created_at?: string;
+  orderNumber?: string;
+  price?: number;
 }
 
 export interface Sale {
@@ -132,6 +151,8 @@ export class DbService {
 
   // Data Signals
   users = signal<User[]>([]);
+  methodologies = signal<Methodology[]>([]);
+  profiles = signal<Profile[]>([]);
   exams = signal<Exam[]>([]);
   patients = signal<Patient[]>([]);
   doctors = signal<Doctor[]>([]);
@@ -174,12 +195,34 @@ export class DbService {
 
     const { user } = session;
 
-    // Fetch profile from users table
-    const { data: profile, error: profileError } = await this.supabase
+    // 1. Try fetching by authId
+    let { data: profile, error: profileError } = await this.supabase
       .from(TBL_USERS)
       .select('*')
       .eq('authId', user.id)
       .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error fetching profile by authId:', profileError.message);
+    }
+
+    // 2. Fallback: Try by Email if not found by authId
+    if (!profile) {
+      const { data: byEmail } = await this.supabase
+        .from(TBL_USERS)
+        .select('*')
+        .eq('email', user.email)
+        .single();
+
+      if (byEmail) {
+        profile = byEmail;
+        // Link authId for next time
+        await this.supabase
+          .from(TBL_USERS)
+          .update({ authId: user.id })
+          .eq('id', profile.id);
+      }
+    }
 
     let role: 'Admin' | 'Técnico' = 'Técnico';
     if (profile && profile.role) {
@@ -254,6 +297,8 @@ export class DbService {
     if (!this.currentUser()) return;
 
     this.fetchPatients();
+    this.fetchMethodologies();
+    this.fetchProfiles();
     this.fetchExams();
     this.fetchResults();
     this.fetchDoctors();
@@ -267,6 +312,20 @@ export class DbService {
     try {
       const { data, error } = await this.supabase.from(TBL_PATIENTS).select('*').order('name');
       if (data) this.patients.set(data as Patient[]);
+    } catch (e) { }
+  }
+
+  async fetchMethodologies() {
+    try {
+      const { data } = await this.supabase.from('methodologies').select('*').order('name');
+      if (data) this.methodologies.set(data as Methodology[]);
+    } catch (e) { }
+  }
+
+  async fetchProfiles() {
+    try {
+      const { data } = await this.supabase.from('profiles').select('*').order('name');
+      if (data) this.profiles.set(data as Profile[]);
     } catch (e) { }
   }
 
@@ -409,7 +468,66 @@ export class DbService {
     }
   }
 
-  async addLabResult(r: LabResult) {
+  async deleteExam(id: string) {
+    const { error } = await this.supabase.from(TBL_EXAMS).delete().eq('id', id);
+    if (!error) {
+      this.exams.update(list => list.filter(e => e.id !== id));
+    }
+  }
+
+  async addMethodology(m: Methodology) {
+    const payload = { ...m, createdBy: this.getUserName() };
+    delete (payload as any).id;
+    const { data } = await this.supabase.from('methodologies').insert(payload).select().single();
+    if (data) this.methodologies.update(list => [...list, data as Methodology]);
+  }
+
+  async updateMethodology(id: string, updated: Partial<Methodology>) {
+    const { data } = await this.supabase
+      .from('methodologies')
+      .update(updated)
+      .eq('id', id)
+      .select()
+      .single();
+    if (data) {
+      this.methodologies.update(list => list.map(m => m.id === id ? (data as Methodology) : m));
+    }
+  }
+
+  async deleteMethodology(id: string) {
+    const { error } = await this.supabase.from('methodologies').delete().eq('id', id);
+    if (!error) {
+      this.methodologies.update(list => list.filter(m => m.id !== id));
+    }
+  }
+
+  async addProfile(p: Profile) {
+    const payload = { ...p, createdBy: this.getUserName() };
+    delete (payload as any).id;
+    const { data } = await this.supabase.from('profiles').insert(payload).select().single();
+    if (data) this.profiles.update(list => [...list, data as Profile]);
+  }
+
+  async updateProfile(id: string, updated: Partial<Profile>) {
+    const { data } = await this.supabase
+      .from('profiles')
+      .update(updated)
+      .eq('id', id)
+      .select()
+      .single();
+    if (data) {
+      this.profiles.update(list => list.map(p => p.id === id ? (data as Profile) : p));
+    }
+  }
+
+  async deleteProfile(id: string) {
+    const { error } = await this.supabase.from('profiles').delete().eq('id', id);
+    if (!error) {
+      this.profiles.update(list => list.filter(p => p.id !== id));
+    }
+  }
+
+  async addLabResult(r: LabResult): Promise<boolean> {
     const payload = { ...r, createdBy: this.getUserName() };
     delete (payload as any).id;
 
@@ -421,11 +539,29 @@ export class DbService {
 
     if (data) {
       this.labResults.update(list => [data as LabResult, ...list]);
+      return true;
+    } else {
+      console.error("Error al guardar el resultado:", error?.message, error?.details);
+      return false;
     }
   }
 
   async updateResult(id: string, interpretation: string) {
     const changes = { interpretation, status: 'Finalizado' as const, lastModifiedBy: this.getUserName() };
+    const { data, error } = await this.supabase
+      .from(TBL_RESULTS)
+      .update(changes)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (data) {
+      this.labResults.update(results => results.map(r => r.id === id ? (data as LabResult) : r));
+    }
+  }
+
+  async updateFullResult(id: string, updated: Partial<LabResult>) {
+    const changes = { ...updated, lastModifiedBy: this.getUserName() };
     const { data, error } = await this.supabase
       .from(TBL_RESULTS)
       .update(changes)
@@ -521,14 +657,27 @@ export class DbService {
 
   // --- EMAILS ---
 
-  async sendResultEmail(email: string, patientName: string, resultData: LabResult): Promise<boolean> {
+  async sendResultEmail(email: string, patientName: string, resultData: LabResult, pdfBase64?: string): Promise<boolean> {
     try {
-      // In Supabase, you would use an Edge Function. 
-      // For now, keeping the simulation/placeholder logic.
-      console.log("Simulating email send via Supabase Edge Function placeholder...");
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return true;
+      const { data, error } = await this.supabase.functions.invoke('send-result-email', {
+        body: {
+          to: email,
+          patientName: patientName,
+          testName: resultData.testName,
+          resultValues: resultData.values,
+          pdfBase64: pdfBase64,
+          subject: `BioSalud: Resultados de Laboratorio - ${patientName}`
+        }
+      });
+
+      if (error) {
+        console.error("Error al invocar la función de correo:", error);
+        return false;
+      }
+
+      return data?.success === true;
     } catch (e) {
+      console.error("Error inesperado en sendResultEmail:", e);
       return false;
     }
   }
@@ -556,16 +705,67 @@ export class DbService {
   }
 
   getRevenueHistory() {
-    const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    return days.map(d => ({ day: d, value: Math.floor(Math.random() * 500) + 200 }));
+    // Group sales by day of the week (last 7 days)
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const now = new Date();
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      return d.toISOString().split('T')[0];
+    }).reverse();
+
+    const salesList = this.sales();
+    return last7Days.map(dateStr => {
+      const d = new Date(dateStr + 'T12:00:00'); // mid-day to avoid TZ issues
+      const dayName = days[d.getDay()];
+      const dayTotal = salesList
+        .filter(s => s.date.startsWith(dateStr))
+        .reduce((sum, s) => sum + s.total, 0);
+      return { day: dayName, value: dayTotal };
+    });
   }
 
   getExamDistribution() {
-    return [
-      { name: 'Hemograma', value: 45 },
-      { name: 'Lipídico', value: 30 },
-      { name: 'Glucosa', value: 15 },
-      { name: 'Hormonas', value: 10 }
-    ];
+    const results = this.labResults();
+    if (results.length === 0) {
+      return [{ name: 'Sin Datos', value: 1 }];
+    }
+
+    // Since a result.testName can be a combined string like "Glucosa / Creatinina",
+    // we take the first part or group by methodology if possible.
+    // For simplicity, we'll extract the first test name mentioned.
+    const counts: Record<string, number> = {};
+    results.forEach(r => {
+      const primaryTest = r.testName.split('/')[0].trim();
+      counts[primaryTest] = (counts[primaryTest] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5); // Top 5
+  }
+
+  getMonthlyExamCount() {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Count exams across all finalized results in the current month
+    // Note: one LabResult might contain multiple staged exams, but 
+    // usually we count how many procedures/reports were issued.
+    // If we want individual tests, we'd need to parse the values field.
+    return this.labResults().filter(r => {
+      const d = new Date(r.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+  }
+
+  getMedicalReferrals() {
+    // Returns top referrers based on referralsLastMonth field
+    return this.doctors()
+      .sort((a, b) => (b.referralsLastMonth || 0) - (a.referralsLastMonth || 0))
+      .slice(0, 5)
+      .map(d => ({ name: d.name, value: d.referralsLastMonth || 0 }));
   }
 }

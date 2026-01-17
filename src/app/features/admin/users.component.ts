@@ -27,7 +27,7 @@ import { DbService, User } from '../../../core/services/db.service';
       @if (showForm()) {
         <div class="bg-white p-8 border border-slate-200 mb-8 animate-fade-in shadow-sm">
           <h2 class="text-lg font-bold mb-6 text-slate-700 border-b pb-2">
-            Editar Perfil
+            {{ editingId() ? 'Editar Perfil' : 'Nuevo Usuario' }}
           </h2>
           <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -102,26 +102,25 @@ export class UsersComponent {
   db = inject(DbService);
   private fb: FormBuilder = inject(FormBuilder);
   private router = inject(Router);
-  
+
   showForm = signal(false);
   isLoading = signal(false);
   editingId = signal<string | null>(null);
 
   userForm = this.fb.group({
     name: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    role: ['Técnico', Validators.required]
+    email: ['', [Validators.required, Validators.email]]
   });
 
   constructor() {
     // Security check: If not Admin, kick out immediately
     effect(() => {
-        const user = this.db.currentUser();
-        // Check if user is loaded first to avoid premature redirect on refresh
-        if (user && user.role !== 'Admin') {
-            console.warn('Unauthorized access attempt to Users module.');
-            this.router.navigate(['/dashboard']);
-        }
+      const user = this.db.currentUser();
+      // Check if user is loaded first to avoid premature redirect on refresh
+      if (user && user.role !== 'Admin') {
+        console.warn('Unauthorized access attempt to Users module.');
+        this.router.navigate(['/dashboard']);
+      }
     });
   }
 
@@ -135,26 +134,23 @@ export class UsersComponent {
     this.editingId.set(user.id);
     this.userForm.patchValue({
       name: user.name,
-      email: user.email,
-      role: user.role
+      email: user.email
     });
-    // Disable role control to prevent editing
-    this.userForm.get('role')?.disable();
-    
+
     this.showForm.set(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   deleteUser(id: string) {
-    if(confirm('¿Está seguro de eliminar este perfil?')) {
-        this.db.deleteUser(id);
+    if (confirm('¿Está seguro de eliminar este perfil?')) {
+      this.db.deleteUser(id);
     }
   }
 
   resetState() {
     this.showForm.set(false);
     this.editingId.set(null);
-    this.userForm.reset({ role: 'Técnico' });
+    this.userForm.reset();
     // Re-enable in case we use this form for something else later, good practice
     this.userForm.get('role')?.enable();
   }
@@ -165,13 +161,11 @@ export class UsersComponent {
 
     if (this.editingId()) {
       const updates: any = {
-          name: formVal.name,
-          email: formVal.email
-          // Role is intentionally excluded from updates
+        name: formVal.name,
+        email: formVal.email
       };
       this.db.updateUser(this.editingId()!, updates);
-    } 
-    
+    }
     this.resetState();
   }
 }

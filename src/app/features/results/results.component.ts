@@ -14,8 +14,8 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        <!-- LEFT COLUMN: Patient Search & Context (4 cols) -->
-        <div class="lg:col-span-4 space-y-6">
+        <!-- LEFT COLUMN: Patient Search & Context (3 cols) -->
+        <div class="lg:col-span-3 space-y-6">
           
           <!-- Search Box (For Adding New Result) -->
           <div class="bg-white p-6 border border-slate-200">
@@ -76,8 +76,8 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
           }
         </div>
 
-        <!-- RIGHT COLUMN: Actions & History (8 cols) -->
-        <div class="lg:col-span-8">
+        <!-- RIGHT COLUMN: Actions & History (9 cols) -->
+        <div class="lg:col-span-9">
           
           @if (selectedPatient()) {
              <!-- FORM: Add New Result -->
@@ -212,131 +212,112 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                  </div>
                </div>
              }
-          } @else {
-             <!-- Empty State / Dashboard of Results -->
-             <div class="bg-white p-8 border border-slate-200 mb-8 flex flex-col items-center justify-center text-center h-64 border-dashed border-2">
-                <i class="fas fa-search text-4xl text-slate-300 mb-4"></i>
-                <h3 class="text-lg font-medium text-slate-600">Comenzar Ingreso</h3>
-                <p class="text-slate-400 text-sm max-w-sm mt-2">Busque y seleccione un paciente en el panel izquierdo para ingresar nuevos resultados de laboratorio.</p>
-             </div>
           }
-
-          <!-- List of Recent Results (Historical Context) -->
-          <div class="bg-white border border-slate-200">
-             <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wide whitespace-nowrap">Historial de Resultados</h3>
-                    <div class="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-sm">Total: {{ filteredHistory().length }}</div>
-                </div>
-                
-                <!-- History Search Bar -->
-                <div class="relative w-full md:w-64">
-                   <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                   <input 
-                     (input)="updateHistorySearch($event)" 
-                     type="text" 
-                     placeholder="Buscar por Paciente, Examen..." 
-                     class="w-full pl-8 p-2 bg-white border border-slate-200 focus:border-[#3498db] outline-none text-xs text-slate-700 transition-colors rounded-sm shadow-sm">
-                </div>
-             </div>
-             
-             <!-- TABLE LAYOUT -->
-             <div class="overflow-x-auto">
-               <table class="w-full text-left border-collapse">
-                 <thead class="bg-slate-50 text-slate-500 uppercase text-xs font-bold tracking-wider">
-                   <tr>
-                     <th class="p-4 border-b border-slate-200">Fecha</th>
-                     <th class="p-4 border-b border-slate-200">Examen</th>
-                     <th class="p-4 border-b border-slate-200">Paciente</th>
-                     <th class="p-4 border-b border-slate-200">Resumen de Valores</th>
-                     <th class="p-4 border-b border-slate-200">Auditoría</th>
-                     <th class="p-4 border-b border-slate-200 text-right">Acciones</th>
-                   </tr>
-                 </thead>
-                 <tbody class="divide-y divide-slate-100">
-                   @for (res of paginatedHistory(); track res.id) {
-                     <tr class="hover:bg-slate-50 transition-colors group">
-                       <td class="p-4 text-xs font-mono text-slate-500 whitespace-nowrap">
-                         {{ res.date }}
-                       </td>
-                       <td class="p-4 font-bold text-slate-700">
-                         {{ res.testName }}
-                       </td>
-                       <td class="p-4 text-slate-600 text-sm">
-                         {{ getPatientName(res.patientId) }}
-                       </td>
-                       <td class="p-4 text-xs font-mono text-slate-500 max-w-[200px] truncate" title="{{ res.values }}">
-                         {{ res.values }}
-                       </td>
-                       <td class="p-4">
-                           <div class="flex flex-col text-[10px] text-slate-500 gap-1">
-                              <div class="flex items-center gap-1" title="Creado por">
-                                <i class="fas fa-plus-circle text-green-400"></i> {{ res.createdBy || 'Sistema' }}
-                              </div>
-                              @if(res.lastModifiedBy) {
-                                <div class="flex items-center gap-1" title="Modificado por">
-                                   <i class="fas fa-pen text-blue-400"></i> {{ res.lastModifiedBy }}
-                                </div>
-                              }
-                           </div>
-                       </td>
-                       <td class="p-4">
-                         <div class="flex gap-2 justify-end">
-                           <!-- Email Button hidden per user request -->
-                           <!-- <button (click)="openEmailModal(res)" class="text-slate-500 text-[10px] font-bold uppercase border border-slate-200 px-3 py-1.5 hover:bg-slate-600 hover:text-white transition-colors rounded-sm flex items-center gap-1" title="Enviar por Correo">
-                               <i class="fas fa-envelope"></i>
-                           </button> -->
-
-                           <!-- View PDF Button -->
-                           <button (click)="generatePdf(res, 'view')" class="text-blue-500 text-[10px] font-bold uppercase border border-blue-200 px-3 py-1.5 hover:bg-blue-500 hover:text-white transition-colors rounded-sm flex items-center gap-1" title="Ver Reporte">
-                               <i class="fas fa-eye"></i> Ver
-                           </button>
-
-                           <!-- Download PDF Button -->
-                           <button (click)="generatePdf(res, 'download')" class="text-red-500 text-[10px] font-bold uppercase border border-red-200 px-3 py-1.5 hover:bg-red-500 hover:text-white transition-colors rounded-sm flex items-center gap-1" title="Descargar Reporte PDF">
-                               <i class="fas fa-file-pdf"></i> PDF
-                           </button>
-                         </div>
-                       </td>
-                     </tr>
-                   } @empty {
-                      <tr>
-                        <td colspan="6" class="p-8 text-center text-slate-400">
-                           <div class="flex flex-col items-center">
-                              <i class="fas fa-search text-2xl mb-2 text-slate-300"></i>
-                              <p class="text-xs">No se encontraron resultados.</p>
-                           </div>
-                        </td>
-                      </tr>
-                   }
-                 </tbody>
-               </table>
-             </div>
-
-             <!-- Pagination Controls -->
-             <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-                <button 
-                  (click)="prevHistoryPage()" 
-                  [disabled]="historyPage() === 1"
-                  class="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-[10px] font-bold uppercase hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-sm">
-                  <i class="fas fa-chevron-left mr-1"></i> Anterior
-                </button>
-                
-                <span class="text-[10px] font-bold text-slate-500">
-                   Página {{ historyPage() }} de {{ historyTotalPages() || 1 }}
-                </span>
-                
-                <button 
-                  (click)="nextHistoryPage()" 
-                  [disabled]="historyPage() >= historyTotalPages()"
-                  class="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-[10px] font-bold uppercase hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-sm">
-                  Siguiente <i class="fas fa-chevron-right ml-1"></i>
-                </button>
-             </div>
-          </div>
-
         </div>
       </div>
+
+      <!-- List of Recent Results (Historical Context) - Now Full Width Below Modules -->
+      <div class="bg-white border border-slate-200 mt-10 mb-10 shadow-sm animate-fade-in rounded-sm overflow-hidden">
+         <div class="p-6 bg-slate-100 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <h3 class="font-bold text-slate-800 uppercase text-xs tracking-widest">Historial Completo de Resultados</h3>
+                <div class="text-xs text-slate-500 font-bold bg-white px-3 py-1 border border-slate-200 rounded-full shadow-sm">Total: {{ filteredHistory().length }}</div>
+            </div>
+            
+            <!-- History Search Bar -->
+            <div class="relative w-full md:w-96">
+               <i class="fas fa-search absolute left-4 top-3 text-slate-400"></i>
+               <input 
+                 (input)="updateHistorySearch($event)" 
+                 type="text" 
+                 placeholder="Buscar por Paciente, Examen, ID o Valor..." 
+                 class="w-full pl-10 p-2.5 bg-white border border-slate-300 focus:border-[#3498db] outline-none text-sm text-slate-700 transition-all rounded-sm shadow-sm">
+            </div>
+         </div>
+         
+         <!-- TABLE LAYOUT -->
+         <div class="overflow-x-auto">
+           <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-50 text-slate-600 uppercase text-xs font-bold tracking-wider">
+                <tr>
+                  <th class="p-6 border-b border-slate-200">Fecha</th>
+                  <th class="p-6 border-b border-slate-200">Examen</th>
+                  <th class="p-6 border-b border-slate-200">Paciente</th>
+                  <th class="p-6 border-b border-slate-200">Resumen de Valores</th>
+                  <th class="p-6 border-b border-slate-200">Auditoría</th>
+                  <th class="p-6 border-b border-slate-200 text-right">Acciones</th>
+                </tr>
+              </thead>
+             <tbody class="divide-y divide-slate-100 bg-white">
+               @for (res of paginatedHistory(); track res.id) {
+                  <tr class="hover:bg-blue-50/30 transition-colors group">
+                    <td class="p-6 text-sm font-mono text-slate-500 whitespace-nowrap">
+                      {{ formatDate(res.date) }}
+                    </td>
+                    <td class="p-6">
+                      <div class="font-bold text-slate-800 text-base">{{ res.testName }}</div>
+                    </td>
+                    <td class="p-6">
+                      <div class="text-slate-800 font-medium text-base">{{ getPatientName(res.patientId) }}</div>
+                    </td>
+                    <td class="p-6">
+                       <div class="text-sm font-mono text-slate-600 max-w-[600px] overflow-hidden whitespace-normal break-words py-1 px-2 bg-slate-50 rounded border border-slate-100" title="{{ res.values }}">
+                          {{ res.values }}
+                       </div>
+                    </td>
+                    <td class="p-6">
+                        <div class="flex flex-col text-xs text-slate-600 gap-1.5">
+                           <div class="flex items-center gap-1.5" title="Creado por">
+                             <i class="fas fa-plus-circle text-green-500"></i> {{ res.createdBy || 'Sistema' }}
+                           </div>
+                           @if(res.lastModifiedBy) {
+                             <div class="flex items-center gap-1.5" title="Modificado por">
+                                <i class="fas fa-pen text-blue-500"></i> {{ res.lastModifiedBy }}
+                             </div>
+                           }
+                        </div>
+                    </td>
+                    <td class="p-6">
+                      <div class="flex gap-2 justify-end">
+                         <!-- Edit Button -->
+                         <button (click)="editResult(res)" class="text-amber-600 text-xs font-bold uppercase border border-amber-300 px-4 py-2 hover:bg-amber-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Editar Resultado">
+                             <i class="fas fa-edit"></i> Editar
+                         </button>
+
+                         <!-- Email Button -->
+                         <button (click)="openEmailModal(res)" class="text-slate-600 text-xs font-bold uppercase border border-slate-300 px-4 py-2 hover:bg-slate-700 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Enviar por Correo">
+                             <i class="fas fa-envelope"></i> Email
+                         </button>
+
+                         <!-- View PDF Button -->
+                         <button (click)="generatePdf(res, 'view')" class="text-blue-600 text-xs font-bold uppercase border border-blue-300 px-4 py-2 hover:bg-blue-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Ver Reporte">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
+
+                        <!-- Download PDF Button -->
+                        <button (click)="generatePdf(res, 'download')" class="text-red-600 text-xs font-bold uppercase border border-red-300 px-4 py-2 hover:bg-red-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Descargar Reporte PDF">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+               }
+             </tbody>
+           </table>
+         </div>
+
+         <!-- Pagination Controls -->
+         <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs">
+            <button (click)="prevHistoryPage()" [disabled]="historyPage() === 1" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-bold uppercase hover:bg-[#3498db] hover:text-white transition-all rounded-sm shadow-sm disabled:opacity-30">
+              <i class="fas fa-arrow-left mr-2"></i>Anterior
+            </button>
+            <span class="font-bold text-slate-700">Página {{ historyPage() }} de {{ historyTotalPages() || 1 }}</span>
+            <button (click)="nextHistoryPage()" [disabled]="historyPage() >= historyTotalPages()" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-bold uppercase hover:bg-[#3498db] hover:text-white transition-all rounded-sm shadow-sm disabled:opacity-30">
+              Siguiente<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+         </div>
+      </div>
+
 
       <!-- EMAIL CONFIRMATION MODAL -->
       @if (showEmailModal()) {
@@ -387,6 +368,41 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
         </div>
       }
 
+      <!-- EDIT RESULT MODAL -->
+      @if (showEditModal()) {
+        <div class="fixed inset-0 bg-slate-900/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fade-in">
+           <div class="bg-white max-w-2xl w-full border border-slate-200 shadow-2xl flex flex-col rounded-sm">
+              <div class="bg-slate-800 text-white p-5 flex justify-between items-center">
+                 <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="fas fa-edit text-amber-400"></i> Modificar Resultado
+                 </h3>
+                 <button (click)="closeEditModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                 </button>
+              </div>
+              <div class="p-6">
+                 <form [formGroup]="editForm" class="space-y-4">
+                    <div>
+                       <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nombre del Examen/Reporte</label>
+                       <input formControlName="testName" type="text" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 font-bold">
+                    </div>
+                    <div>
+                       <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Valores y Detalles</label>
+                       <textarea formControlName="values" rows="12" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 font-mono text-sm"></textarea>
+                    </div>
+                 </form>
+              </div>
+              <div class="p-5 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+                 <button (click)="closeEditModal()" [disabled]="isProcessing()" class="px-6 py-2 text-slate-500 font-bold text-sm hover:text-slate-800 transition-colors">Descartar</button>
+                 <button (click)="saveEdit()" [disabled]="editForm.invalid || isProcessing()" class="bg-[#27ae60] text-white px-8 py-2 hover:bg-[#219150] disabled:opacity-50 font-bold uppercase text-xs tracking-wide transition-colors shadow-sm flex items-center gap-2">
+                    @if(isProcessing()) { <i class="fas fa-circle-notch fa-spin"></i> Guardando... }
+                    @else { <i class="fas fa-save"></i> Guardar Cambios }
+                 </button>
+              </div>
+           </div>
+        </div>
+      }
+
     </div>
   `,
    styles: [`
@@ -426,8 +442,17 @@ export class ResultsComponent {
    resultToEmail = signal<LabResult | null>(null);
    emailStatus = signal<'idle' | 'sending' | 'success'>('idle');
 
+   // Edit Modal State
+   showEditModal = signal(false);
+   resultToEdit = signal<LabResult | null>(null);
+
    resultForm = this.fb.group({
       examId: ['', Validators.required],
+      values: ['', Validators.required]
+   });
+
+   editForm = this.fb.group({
+      testName: ['', Validators.required],
       values: ['', Validators.required]
    });
 
@@ -567,6 +592,56 @@ export class ResultsComponent {
       return this.db.patients().find(p => p.id === id)?.name || 'Desconocido';
    }
 
+   formatDate(dateStr: string): string {
+      if (!dateStr) return '';
+      // If it's ISO format, take the date part
+      const datePart = dateStr.split('T')[0];
+      const parts = datePart.split('-');
+      if (parts.length === 3) {
+         // Return DD/MM/YYYY
+         return `${parts[parts.length - 1]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateStr;
+   }
+
+   // --- EDIT ACTION ---
+   editResult(res: LabResult) {
+      this.resultToEdit.set(res);
+      this.editForm.patchValue({
+         testName: res.testName,
+         values: res.values
+      });
+      this.showEditModal.set(true);
+   }
+
+   async saveEdit() {
+      const res = this.resultToEdit();
+      if (!res || this.editForm.invalid) return;
+
+      this.isProcessing.set(true);
+      try {
+         const updatedData = {
+            testName: this.editForm.value.testName!,
+            values: this.editForm.value.values!
+         };
+
+         await this.db.updateFullResult(res.id, updatedData);
+         this.showEditModal.set(false);
+         this.resultToEdit.set(null);
+      } catch (error) {
+         console.error('Error updating result:', error);
+         alert('Error al actualizar el resultado.');
+      } finally {
+         this.isProcessing.set(false);
+      }
+   }
+
+   closeEditModal() {
+      this.showEditModal.set(false);
+      this.resultToEdit.set(null);
+      this.editForm.reset();
+   }
+
    // --- EMAIL ACTIONS ---
 
    openEmailModal(res: LabResult) {
@@ -600,15 +675,39 @@ export class ResultsComponent {
 
       this.emailStatus.set('sending');
 
-      const success = await this.db.sendResultEmail(patient.email, patient.name, result);
+      try {
+         // Generate PDF as Base64 using html2pdf and the new 'email' mode (self-contained CSS)
+         const html = this.getReportHtml(result, 'email');
+         const worker = (window as any).html2pdf().from(html).set({
+            margin: 0,
+            filename: `Resultado_${patient.name.replace(/\s+/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+               scale: 3,
+               useCORS: true,
+               letterRendering: true
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+         });
 
-      if (success) {
-         this.emailStatus.set('success');
-         setTimeout(() => {
-            this.closeEmailModal();
-         }, 2000);
-      } else {
-         alert('Error al enviar el correo. Verifique la conexión con la función Backend.');
+         const pdfBase64 = await worker.outputPdf('datauristring').then((dataUri: string) => {
+            return dataUri.split(',')[1];
+         });
+
+         const success = await this.db.sendResultEmail(patient.email, patient.name, result, pdfBase64);
+
+         if (success) {
+            this.emailStatus.set('success');
+            setTimeout(() => {
+               this.closeEmailModal();
+            }, 2000);
+         } else {
+            alert('Error al enviar el correo. Verifique la conexión con la función Backend.');
+            this.emailStatus.set('idle');
+         }
+      } catch (error) {
+         console.error('PDF Generation error:', error);
+         alert('Error al generar o enviar el PDF.');
          this.emailStatus.set('idle');
       }
    }
@@ -693,258 +792,202 @@ export class ResultsComponent {
    // --- BATCH LOGIC END ---
 
    generatePdf(res: LabResult, mode: 'view' | 'download' = 'download') {
-      const patient = this.db.patients().find(p => p.id === res.patientId);
-      if (!patient) return;
-
       const printWindow = window.open('', '', 'width=900,height=1100');
       if (!printWindow) return;
+
+      const html = this.getReportHtml(res, mode);
+      printWindow.document.write(html);
+      printWindow.document.close();
+   }
+
+   getReportHtml(res: LabResult, mode: 'view' | 'download' | 'email'): string {
+      const patient = this.db.patients().find(p => p.id === res.patientId);
+      if (!patient) return '';
 
       // Check for signature
       const rawSig = this.db.labSignature();
       const sigImage = typeof rawSig === 'string' ? rawSig : null;
 
-      const signatureHtml = sigImage
-         ? `<img src="${sigImage}" style="height: 60px; display: block; margin: 0 auto 5px auto;" alt="Firma">`
-         : `<div style="height:40px;"></div><span class="font-cursive text-xl text-slate-600 font-bold italic" style="font-family: 'Brush Script MT', cursive;">${res.createdBy || 'Bioquímico'}</span>`;
-
       // Check for logo
       const rawLogo = this.db.labLogo();
       const logoImage = typeof rawLogo === 'string' ? rawLogo : null;
-      const logoHtml = logoImage
-         ? `<img src="${logoImage}" style="width: 100px; height: auto; display: block; margin-bottom: 5px;" alt="Logo">`
-         : `<!-- Custom BioSalud Logo SVG -->
-               <svg width="80" height="80" viewBox="0 0 100 100" class="mb-2">
-                  <path d="M50 90 C10 60 5 35 25 15 A20 20 0 0 1 50 35 A20 20 0 0 1 75 15 C95 35 90 60 50 90" fill="none" stroke="#1abc9c" stroke-width="3"/>
-                  <path d="M20 50 L35 50 L45 30 L55 70 L65 50 L80 50" fill="none" stroke="#1abc9c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-               </svg>`;
 
-      // Check for watermark (logo)
+      const signatureHtml = sigImage
+         ? `<img src="${sigImage}" style="height: 70px; display: block; margin: 0 auto 5px auto;" alt="Firma">`
+         : `<div style="height:40px;"></div><span style="font-family: 'Brush Script MT', cursive; font-size: 20px; color: #475569; font-weight: bold; font-style: italic;">${res.createdBy || 'Bioquímico'}</span>`;
+
+      const logoHtml = logoImage
+         ? `<img src="${logoImage}" style="width: 110px; height: auto; display: block; margin-bottom: 5px;" alt="Logo">`
+         : `<svg width="80" height="80" viewBox="0 0 100 100" style="margin-bottom: 10px;">
+                 <path d="M50 90 C10 60 5 35 25 15 A20 20 0 0 1 50 35 A20 20 0 0 1 75 15 C95 35 90 60 50 90" fill="none" stroke="#1abc9c" stroke-width="3"/>
+                 <path d="M20 50 L35 50 L45 30 L55 70 L65 50 L80 50" fill="none" stroke="#1abc9c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>`;
+
       const watermarkHtml = logoImage
          ? `<img src="${logoImage}" style="width: 100%; height: auto;" alt="Watermark">`
-         : `<svg viewBox="0 0 512 512" fill="#000" style="width: 100%;">
-               <path d="M416 96c-44.2 0-80 35.8-80 80 0-44.2-35.8-80-80-80s-80 35.8-80 80c0-44.2-35.8-80-80-80S16 131.8 16 176c0 88.4 128 240 240 240s240-151.6 240-240c0-44.2-35.8-80-80-80z"/>
-            </svg>`;
+         : `<svg viewBox="0 0 512 512" fill="#000" style="width: 100%;"><path d="M416 96c-44.2 0-80 35.8-80 80 0-44.2-35.8-80-80-80s-80 35.8-80 80c0-44.2-35.8-80-80-80S16 131.8 16 176c0 88.4 128 240 240 240s240-151.6 240-240c0-44.2-35.8-80-80-80z"/></svg>`;
 
-      // Only inject print script if downloading
-      const printScript = mode === 'download'
-         ? `<script>
-            setTimeout(() => {
-                window.print();
-            }, 500);
-         </script>`
-         : '';
+      const printScript = mode === 'download' ? `<script>setTimeout(() => { window.print(); }, 500);</script>` : '';
 
-      // --- PARSING LOGIC FOR TABLE ---
+      // --- PARSING LOGIC FOR TABLE (Simplified and Robust) ---
       let tableRowsHtml = '';
       const resValuesStr = String(res.values || '');
       const lines = resValuesStr.split('\n');
-      let currentTest = '';
-      let currentRef = '';
-      let currentUnit = '';
-      let currentValue = '';
 
-      const isFormatted = resValuesStr.includes('►') || resValuesStr.includes('Valor:');
-
-      if (!isFormatted) {
-         tableRowsHtml += `
-          <tr>
-             <td class="p-2 border border-slate-300 font-bold text-xs">${res.testName}</td>
-             <td class="p-2 border border-slate-300 text-xs font-mono">${resValuesStr}</td>
-             <td class="p-2 border border-slate-300 text-xs text-center">-</td>
-             <td class="p-2 border border-slate-300 text-xs text-center">-</td>
-          </tr>
-        `;
-      } else {
-         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            if (line.startsWith('►')) {
-               currentTest = line.replace('►', '').trim();
-               currentRef = '';
-               currentUnit = '';
-               currentValue = '';
-            } else if (line.startsWith('Rango Ref:')) {
-               currentRef = line.replace('Rango Ref:', '').trim();
-            } else if (line.startsWith('Unidad:')) {
-               currentUnit = line.replace('Unidad:', '').trim();
-            } else if (line.startsWith('Valor:')) {
-               currentValue = line.replace('Valor:', '').trim();
-
-               tableRowsHtml += `
-                  <tr>
-                     <td class="p-2 border border-slate-400 font-bold text-xs text-slate-800">${currentTest}</td>
-                     <td class="p-2 border border-slate-400 text-xs text-center font-bold text-slate-900">${currentValue}</td>
-                     <td class="p-2 border border-slate-400 text-xs text-center text-slate-600">${currentRef}</td>
-                     <td class="p-2 border border-slate-400 text-xs text-center text-slate-500">${currentUnit}</td>
-                  </tr>
-                `;
-            }
+      let tTmp = '';
+      let cT = '', cR = '', cU = '', cV = '';
+      for (const line of lines) {
+         const l = line.trim();
+         if (!l) continue;
+         if (l.startsWith('■')) {
+            if (tTmp) tableRowsHtml += `<tbody style="page-break-inside: avoid;">${tTmp}</tbody>`;
+            tTmp = `<tr><td colspan="4" style="padding: 10px; border: 2px solid #334155; font-weight: bold; font-size: 14px; text-align: center; background: #f1f5f9; text-transform: uppercase;">${l.replace('■', '').trim()}</td></tr>`;
+         } else if (l.startsWith('►')) {
+            cT = l.replace('►', '').trim(); cR = ''; cU = ''; cV = '';
+         } else if (l.startsWith('Rango Ref:')) { cR = l.replace('Rango Ref:', '').trim(); }
+         else if (l.startsWith('Unidad:')) { cU = l.replace('Unidad:', '').trim(); }
+         else if (l.startsWith('Valor:')) {
+            cV = l.replace('Valor:', '').trim();
+            tTmp += `
+                <tr>
+                   <td style="padding: 10px; border: 1px solid #94a3b8; font-weight: bold; font-size: 12px;">${cT}</td>
+                   <td style="padding: 10px; border: 1px solid #94a3b8; font-weight: bold; font-size: 13px; text-align: center; color: #0f172a;">${cV}</td>
+                   <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 11px; text-align: center; color: #475569;">${cR}</td>
+                   <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 11px; text-align: center; color: #64748b;">${cU}</td>
+                </tr>
+             `;
          }
       }
+      if (tTmp) tableRowsHtml += `<tbody style="page-break-inside: avoid;">${tTmp}</tbody>`;
+      if (!tableRowsHtml) {
+         tableRowsHtml = `
+             <tbody>
+                <tr>
+                   <td style="padding: 12px; border: 1px solid #94a3b8; font-weight: bold; font-size: 12px; width: 40%;">${res.testName}</td>
+                   <td style="padding: 12px; border: 1px solid #94a3b8; font-size: 12px; font-family: monospace; text-align: center;">${resValuesStr}</td>
+                   <td style="padding: 12px; border: 1px solid #94a3b8; font-size: 12px; text-align: center;">-</td>
+                   <td style="padding: 12px; border: 1px solid #94a3b8; font-size: 12px; text-align: center;">-</td>
+                </tr>
+             </tbody>
+           `;
+      }
 
-      const html = `
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-        <title>Reporte BioSalud - ${patient.name}</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>
-            body { 
-                padding: 40px; 
-                font-family: 'Arial', sans-serif; 
-                -webkit-print-color-adjust: exact; 
-                background: white;
-                max-width: 900px;
-                margin: 0 auto;
-            }
-            .watermark {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                opacity: 0.08;
-                z-index: -1;
-                width: 70%;
-                max-width: 600px;
-            }
-            @media print { 
-                body { padding: 0; margin: 20px; }
-                .no-print { display: none; } 
-            }
-        </style>
-      </head>
-      <body>
-        
-        <!-- Watermark -->
-        <div class="watermark">
-           ${watermarkHtml}
-        </div>
+      return `
+       <!DOCTYPE html>
+       <html lang="es">
+       <head>
+         <meta charset="UTF-8">
+         <style>
+             @page { size: auto; margin: 0; }
+             body {
+                 margin: 0; padding: 1.5cm;
+                 font-family: 'Helvetica', 'Arial', sans-serif;
+                 background-color: white;
+                 color: #1e293b;
+                 line-height: 1.4;
+             }
+             .header-container { display: flex; align-items: flex-start; margin-bottom: 20px; }
+             .logo-box { width: 20%; text-align: center; }
+             .details-box { flex: 1; text-align: center; }
+             .patient-box { 
+                 border: 2px solid #1e293b; 
+                 border-radius: 15px; 
+                 padding: 15px; 
+                 margin-bottom: 25px;
+                 display: grid;
+                 grid-template-columns: 1fr 1fr;
+                 gap: 5px;
+             }
+             .patient-item { display: flex; font-size: 13px; }
+             .patient-label { font-weight: bold; width: 85px; }
+             .table-results { 
+                 width: 100%; border-collapse: collapse; margin-bottom: 30px; 
+             }
+             .table-results th { 
+                 border: 1px solid #64748b; padding: 10px; background-color: #f8fafc;
+                 text-transform: uppercase; font-size: 11px;
+             }
+             .watermark {
+                 position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                 opacity: 0.05; z-index: -1; width: 70%;
+             }
+             .footer-disclaimer {
+                 font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0;
+                 padding-top: 10px; text-align: justify; margin-bottom: 40px;
+             }
+             .signature-section { text-align: center; width: 250px; margin: 0 auto; }
+             .signature-line { border-bottom: 1px solid black; margin-bottom: 5px; height: 75px; display: flex; align-items: flex-end; justify-content: center; }
+             .page-footer {
+                 position: fixed; bottom: 0.5cm; left: 1.5cm; right: 1.5cm;
+                 font-size: 9px; color: #94a3b8; display: flex; justify-content: space-between;
+                 border-top: 0.5px solid #cbd5e1; padding-top: 5px;
+             }
+             @media print { 
+                 .no-print { display: none; }
+                 body { padding: 1.5cm; }
+             }
+         </style>
+       </head>
+       <body>
+          <div class="watermark">${watermarkHtml}</div>
+          
+          <div class="header-container">
+             <div class="logo-box">${logoHtml}</div>
+             <div class="details-box">
+                <h1 style="font-weight: bold; font-size: 20px; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">LABORATORIO CLÍNICO BIOSALUD HUEHUETENANGO</h1>
+                <p style="font-size: 11px; margin: 2px 0;">Manzana G, Casa 24 Residenciales Valle del Quetzal Km. 28 zona 0,</p>
+                <p style="font-size: 11px; margin: 2px 0;">San Juan Sacatepéquez, Guatemala</p>
+                <p style="font-size: 11px; font-weight: 500; margin: 2px 0;">TEL: 4240-7376 | e-mail: biosalud.lcb@gmail.com</p>
+                <p style="font-size: 13px; font-weight: bold; margin-top: 5px;">Licda. Yénnifer Soto - Química Bióloga (Col. 6,808)</p>
+             </div>
+          </div>
 
-        <!-- HEADER -->
-        <div class="flex justify-between items-start mb-6">
-           <!-- Logo Section -->
-           <div class="flex flex-col items-center w-1/4">
-              ${logoHtml}
-              <div class="text-[#1abc9c] font-bold text-xs text-center leading-tight">
-                 BioSalud<br>Huehuetenango
-              </div>
-              <div class="text-[8px] text-center text-slate-400 leading-tight mt-1">
-                 Laboratorio Clínico, Nivel II<br>
-                 Manzana G, Casa 24 Residenciales Valle
-              </div>
-           </div>
+          <div class="patient-box">
+             <div class="patient-item"><span class="patient-label">NOMBRE:</span> <span style="text-transform: uppercase;">${patient.name}</span></div>
+             <div class="patient-item"><span class="patient-label">DPI:</span> <span>${patient.dpi}</span></div>
+             <div class="patient-item"><span class="patient-label">ORDEN:</span> <span>${res.orderNumber || res.id.substring(0, 8)}</span></div>
+             <div class="patient-item"><span class="patient-label">FECHA:</span> <span>${res.date.split('T')[0].split('-').reverse().join('/')}</span></div>
+             <div class="patient-item"><span class="patient-label">EDAD:</span> <span>${patient.age} años</span></div>
+             <div class="patient-item"><span class="patient-label">GENERO:</span> <span>${patient.gender}</span></div>
+             <div class="patient-item" style="grid-column: span 2;"><span class="patient-label">MÉDICO:</span> <span>${patient.doctor || 'Particular'}</span></div>
+          </div>
 
-           <!-- Center Info -->
-           <div class="text-center w-2/4 pt-2">
-              <h1 class="font-bold text-xl text-slate-800 tracking-wide uppercase mb-1">Laboratorio Clínico BioSalud Huehuetenango</h1>
-              <p class="text-xs text-slate-600 mb-1">Manzana G, Casa 24 Residenciales Valle del Quetzal Km. 28 zona 0,</p>
-              <p class="text-xs text-slate-600 mb-1">San Juan Sacatepéquez, Guatemala</p>
-              <p class="text-xs text-slate-800 font-bold mb-1">TEL: 4240-7376</p>
-              <p class="text-xs text-slate-600 mb-2">e-mail: biosalud.lcb@gmail.com</p>
-              
-              <div class="mt-2">
-                 <p class="text-sm font-bold text-slate-800">Licda. Yénnifer Soto</p>
-                 <p class="text-xs text-slate-600">Química Bióloga, Colegiado No. 6,808</p>
-              </div>
-           </div>
+          <div style="text-align: center; font-weight: bold; font-size: 16px; text-transform: uppercase; margin-bottom: 25px; color: #1e293b; border-bottom: 2px solid #e2e8f0; display: inline-block; width: 100%; padding-bottom: 5px;">
+             REPORTE DE: ${res.testName}
+          </div>
 
-           <!-- Spacer for alignment -->
-           <div class="w-1/4"></div>
-        </div>
+          <table class="table-results">
+             <thead>
+                <tr>
+                   <th>Estudio</th>
+                   <th>Resultado</th>
+                   <th>Referencia</th>
+                   <th>Unidad</th>
+                </tr>
+             </thead>
+             ${tableRowsHtml}
+          </table>
 
-        <!-- PATIENT INFO BOX -->
-        <div class="border border-slate-800 rounded-2xl p-4 mb-8 text-sm">
-           <div class="grid grid-cols-2 gap-x-8 gap-y-1">
-              <div class="flex">
-                 <span class="font-bold w-20">NOMBRE:</span>
-                 <span class="uppercase">${patient.name}</span>
-              </div>
-              <div class="flex">
-                 <span class="font-bold w-16">DPI.:</span>
-                 <span>${patient.dpi}</span>
-              </div>
-              
-              <div class="flex">
-                 <span class="font-bold w-20">ORDEN:</span>
-                 <span>${res.id}</span>
-              </div>
-              <div class="flex">
-                 <span class="font-bold w-16">EDAD:</span>
-                 <span>${patient.age} años</span>
-              </div>
+          <div class="footer-disclaimer">
+             Nuestro proceso analítico completo se somete a rigurosos controles de calidad, utilizando herramientas estadísticas avanzadas para laboratorios clínicos. Esto garantiza la precisión y confiabilidad de todos nuestros resultados.
+             <br><br>
+             <span style="font-weight: bold; color: black;">El original de este documento se encuentra en los archivos de Laboratorio BioSalud Huehuetenango. El uso de este documento es responsabilidad exclusiva del cliente.</span>
+          </div>
 
-              <div class="flex">
-                 <span class="font-bold w-20">FECHA:</span>
-                 <span>${res.date}</span>
-              </div>
-              <div class="flex">
-                 <span class="font-bold w-16">GENERO:</span>
-                 <span>${patient.gender}</span>
-              </div>
+          <div class="signature-section">
+             <div class="signature-line">${signatureHtml}</div>
+             <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yénnifer Soto</p>
+             <p style="font-size: 10px; color: #64748b; margin: 0;">Química Bióloga, Colegiado No. 6, 808</p>
+          </div>
 
-              <div class="col-span-2 flex">
-                 <span class="font-bold w-20">MÉDICO:</span>
-                 <span>${patient.doctor || 'Particular'}</span>
-              </div>
-           </div>
-        </div>
+          <div class="page-footer">
+             <div>Impreso el: ${new Date().toLocaleString('es-GT')}</div>
+             <div>Laboratorio BioSalud Huehuetenango</div>
+          </div>
 
-        <!-- SECTION TITLE -->
-        <div class="text-center font-bold text-lg uppercase mb-2 border-b border-transparent">
-           ${res.testName.split(' ')[0] || 'RESULTADOS'} 
-        </div>
-        
-        <!-- SUBTITLE (Exact Test Name) -->
-        <div class="font-bold text-xs uppercase mb-4 pl-2">
-           ${res.testName}
-        </div>
-
-        <!-- RESULTS TABLE -->
-        <table class="w-full border-collapse border border-slate-400 mb-8">
-           <thead>
-              <tr>
-                 <th class="border border-slate-400 p-2 text-xs uppercase bg-white">Estudio</th>
-                 <th class="border border-slate-400 p-2 text-xs uppercase bg-white">Resultado</th>
-                 <th class="border border-slate-400 p-2 text-xs uppercase bg-white">Referencia</th>
-                 <th class="border border-slate-400 p-2 text-xs uppercase bg-white">Unidad</th>
-              </tr>
-           </thead>
-           <tbody>
-              ${tableRowsHtml}
-           </tbody>
-        </table>
-
-        <!-- OBSERVATIONS -->
-        <div class="mb-12">
-           <h3 class="font-bold text-xs uppercase mb-2">Observaciones</h3>
-           <div class="border border-slate-800 rounded-xl h-24 p-2"></div>
-        </div>
-
-        <!-- FOOTER & DISCLAIMER -->
-        <div class="text-[10px] text-slate-500 text-justify leading-tight border-t border-slate-200 pt-4 mb-8">
-           Nuestro proceso analítico completo se somete a rigurosos controles de calidad, utilizando herramientas estadísticas avanzadas para laboratorios clínicos. Esto garantiza la precisión y confiabilidad de todos nuestros resultados.
-           <br><br>
-           <span class="font-bold text-black">El original de este documento se encuentra en los archivos de Laboratorio BioSalud Huehuetenango. El uso de este documento es responsabilidad exclusiva del cliente.</span>
-        </div>
-
-        <!-- SIGNATURE -->
-        <div class="flex justify-center mt-4">
-           <div class="text-center w-64">
-              <div class="border-b border-black mb-1 pb-1 flex flex-col items-center justify-end h-20">
-                 ${signatureHtml}
-              </div>
-              <p class="font-bold text-xs text-slate-800">Licda. Yénnifer Soto</p>
-              <p class="text-[10px] text-slate-600">Química Bióloga, Colegiado No. 6,808</p>
-           </div>
-        </div>
-
-        ${printScript}
-      </body>
-      </html>
-    `;
-
-      printWindow.document.write(html);
-      printWindow.document.close();
+          ${printScript}
+       </body>
+       </html>
+       `;
    }
 }
