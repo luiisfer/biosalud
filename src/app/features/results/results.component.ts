@@ -300,9 +300,9 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                  <div class="flex justify-end">
                     <button (click)="finalizeBatch()" [disabled]="isProcessing()" class="bg-[#27ae60] text-white px-8 py-4 hover:bg-[#219150] font-bold uppercase text-sm tracking-wide transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center">
                        @if (isProcessing()) { 
-                          <i class="fas fa-circle-notch fa-spin"></i> Procesando Reporte... 
+                          <i class="fas fa-circle-notch fa-spin"></i> Guardando... 
                        } @else {
-                          <i class="fas fa-file-pdf"></i> Guardar y Generar PDF Unificado
+                          <i class="fas fa-save"></i> Guardar
                        }
                     </button>
                  </div>
@@ -1031,11 +1031,6 @@ export class ResultsComponent {
       };
 
       this.db.addLabResult(newResult);
-
-      const savedResult = this.db.labResults()[0];
-      if (savedResult) {
-         this.generatePdf(savedResult, 'download');
-      }
 
       this.isProcessing.set(false);
       this.stagedResults.set([]);
