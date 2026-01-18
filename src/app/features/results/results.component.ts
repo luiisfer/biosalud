@@ -837,7 +837,7 @@ export class ResultsComponent {
          // Generate PDF as Base64 using html2pdf and the new 'email' mode (self-contained CSS)
          const html = this.getReportHtml(result, 'email');
          const worker = (window as any).html2pdf().from(html).set({
-            margin: 0,
+            margin: 15,
             filename: `Resultado_${patient.name.replace(/\s+/g, '_')}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
@@ -848,7 +848,19 @@ export class ResultsComponent {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
          });
 
-         const pdfBase64 = await worker.outputPdf('datauristring').then((dataUri: string) => {
+         const pdfBase64 = await worker.toPdf().get('pdf').then((pdf: any) => {
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+               pdf.setPage(i);
+               pdf.setFontSize(9);
+               pdf.setTextColor(148, 163, 184); // slate-400
+               const text = `Página ${i} de ${totalPages}`;
+               const pageWidth = pdf.internal.pageSize.getWidth();
+               const pageHeight = pdf.internal.pageSize.getHeight();
+               const textWidth = pdf.getStringUnitWidth(text) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+               pdf.text(text, (pageWidth - textWidth) / 2, pageHeight - 10);
+            }
+         }).outputPdf('datauristring').then((dataUri: string) => {
             return dataUri.split(',')[1];
          });
 
@@ -979,12 +991,25 @@ export class ResultsComponent {
 
       if (mode === 'download') {
          const html = this.getReportHtml(res, mode);
+
          (window as any).html2pdf().from(html).set({
-            margin: 0,
+            margin: 15,
             filename: fileName,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+            html2canvas: { scale: 3, useCORS: true, allowTaint: true, letterRendering: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+         }).toPdf().get('pdf').then((pdf: any) => {
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+               pdf.setPage(i);
+               pdf.setFontSize(9);
+               pdf.setTextColor(148, 163, 184); // slate-400
+               const text = `Página ${i} de ${totalPages}`;
+               const pageWidth = pdf.internal.pageSize.getWidth();
+               const pageHeight = pdf.internal.pageSize.getHeight();
+               const textWidth = pdf.getStringUnitWidth(text) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+               pdf.text(text, (pageWidth - textWidth) / 2, pageHeight - 10);
+            }
          }).save();
       } else {
          const printWindow = window.open('', '', 'width=900,height=1100');
@@ -1008,11 +1033,11 @@ export class ResultsComponent {
       const logoImage = typeof rawLogo === 'string' ? rawLogo : null;
 
       const signatureHtml = sigImage
-         ? `<img src="${sigImage}" style="height: 70px; display: block; margin: 0 auto 5px auto;" alt="Firma">`
+         ? `<img src="${sigImage}" style="height: 70px; object-fit: contain;" alt="Firma">`
          : `<div style="height:40px;"></div><span style="font-family: 'Brush Script MT', cursive; font-size: 20px; color: #475569; font-weight: bold; font-style: italic;">${res.createdBy || 'Bioquímico'}</span>`;
 
       const logoHtml = logoImage
-         ? `<img src="${logoImage}" style="width: 110px; height: auto; display: block; margin-bottom: 5px;" alt="Logo">`
+         ? `<img src="${logoImage}" style="width: 110px; height: auto; display: block; margin: 0 auto 5px auto;" alt="Logo">`
          : `<svg width="80" height="80" viewBox="0 0 100 100" style="margin-bottom: 10px;">
                  <path d="M50 90 C10 60 5 35 25 15 A20 20 0 0 1 50 35 A20 20 0 0 1 75 15 C95 35 90 60 50 90" fill="none" stroke="#1abc9c" stroke-width="3"/>
                  <path d="M20 50 L35 50 L45 30 L55 70 L65 50 L80 50" fill="none" stroke="#1abc9c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1022,7 +1047,7 @@ export class ResultsComponent {
          ? `<img src="${logoImage}" style="width: 100%; height: auto;" alt="Watermark">`
          : `<svg viewBox="0 0 512 512" fill="#000" style="width: 100%;"><path d="M416 96c-44.2 0-80 35.8-80 80 0-44.2-35.8-80-80-80s-80 35.8-80 80c0-44.2-35.8-80-80-80S16 131.8 16 176c0 88.4 128 240 240 240s240-151.6 240-240c0-44.2-35.8-80-80-80z"/></svg>`;
 
-      const printScript = mode === 'download' ? `<script>setTimeout(() => { window.print(); }, 500);</script>` : '';
+      const printScript = mode === 'view' ? `<script>setTimeout(() => { window.print(); }, 800);</script>` : '';
 
       // --- PARSING LOGIC FOR TABLE (Simplified and Robust) ---
       let tableRowsHtml = '';
@@ -1072,10 +1097,11 @@ export class ResultsComponent {
        <html lang="es">
        <head>
          <meta charset="UTF-8">
+         <title>Resultado ${patient.name}</title>
          <style>
-             @page { size: auto; margin: 0; }
+             ${mode === 'view' ? '@page { size: A4; margin: 0; }' : '@page { size: A4; margin: 1.5cm; }'}
              body {
-                 margin: 0; padding: 1.5cm;
+                 ${mode === 'view' ? 'margin: 1.5cm;' : 'margin: 0;'} padding: 0;
                  font-family: 'Helvetica', 'Arial', sans-serif;
                  background-color: white;
                  color: #1e293b;
@@ -1110,8 +1136,10 @@ export class ResultsComponent {
                  font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0;
                  padding-top: 10px; text-align: justify; margin-bottom: 40px;
              }
-             .signature-section { text-align: center; width: 250px; margin: 0 auto; }
-             .signature-line { border-bottom: 1px solid black; margin-bottom: 5px; height: 75px; display: flex; align-items: flex-end; justify-content: center; }
+                           .signature-section { text-align: center; width: 250px; margin: 40px auto 0 auto; page-break-inside: avoid; }
+
+                           .signature-line { border-bottom: 2px solid #000; margin-bottom: 5px; height: 75px; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 5px; }
+
              .page-footer {
                  position: fixed; bottom: 0.5cm; left: 1.5cm; right: 1.5cm;
                  font-size: 9px; color: #94a3b8; display: flex; justify-content: space-between;
@@ -1119,7 +1147,6 @@ export class ResultsComponent {
              }
              @media print { 
                  .no-print { display: none; }
-                 body { padding: 1.5cm; }
              }
          </style>
        </head>
