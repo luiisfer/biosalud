@@ -304,7 +304,7 @@ export class SalesComponent {
 
    // KPIs
    totalRevenue = computed(() => {
-      return this.filteredSales().reduce((acc, curr) => acc + curr.total, 0);
+      return this.filteredSales().reduce((acc, curr) => acc + (curr.total || 0), 0);
    });
 
    // Average Ticket
@@ -314,7 +314,7 @@ export class SalesComponent {
    });
 
    currentTotal = computed(() => {
-      return this.selectedExams().reduce((acc, ex) => acc + ex.price, 0);
+      return this.selectedExams().reduce((acc, ex) => acc + (ex.price || 0), 0);
    });
 
    getPatientName(id: string) {

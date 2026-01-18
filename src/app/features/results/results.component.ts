@@ -902,7 +902,8 @@ export class ResultsComponent {
             testName: exam.name,
             date: this.todayDate,
             values: currentVals[exam.id] || 'Pendiente',
-            status: 'Pendiente'
+            status: 'Pendiente',
+            price: exam.price
          }));
          this.stagedResults.update(list => [...list, ...results]);
       } else {
@@ -919,7 +920,8 @@ export class ResultsComponent {
             testName: exam.name,
             date: this.todayDate,
             values: formVal.values!,
-            status: 'Pendiente'
+            status: 'Pendiente',
+            price: exam.price
          };
          this.stagedResults.update(list => [...list, newResult]);
       }
@@ -1015,6 +1017,8 @@ export class ResultsComponent {
          });
       }
 
+      const totalPrice = this.stagedResults().reduce((sum, r) => sum + (r.price || 0), 0);
+
       const newResult: LabResult = {
          id: Math.floor(Math.random() * 100000).toString(),
          patientId: this.selectedPatient()!.id,
@@ -1022,7 +1026,8 @@ export class ResultsComponent {
          date: this.todayDate,
          values: combinedValues.trim(),
          status: 'Finalizado',
-         orderNumber: this.orderNumber()
+         orderNumber: this.orderNumber(),
+         price: totalPrice
       };
 
       this.db.addLabResult(newResult);
