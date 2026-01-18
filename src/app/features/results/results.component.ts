@@ -9,84 +9,126 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
    standalone: true,
    imports: [CommonModule, ReactiveFormsModule],
    template: `
-    <div>
-      <h1 class="text-2xl font-light text-slate-800 mb-6">Gestión de Resultados</h1>
+     <div>
+      <h1 class="text-3xl font-light text-slate-800 mb-8 border-b border-slate-100 pb-4">Gestión de Resultados</h1>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <!-- LEFT COLUMN: Patient Search & Context (3 cols) -->
-        <div class="lg:col-span-3 space-y-6">
-          
-          <!-- Search Box (For Adding New Result) -->
-          <div class="bg-white p-6 border border-slate-200">
-             <h2 class="text-xs font-bold text-slate-500 uppercase mb-4">Buscar Paciente</h2>
-             <div class="relative">
-               <i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i>
+      <!-- NEW GIGANTIC FULL-WIDTH SEARCH HERO -->
+      <div class="mb-10 bg-white p-10 border border-slate-200 shadow-xl rounded-sm animate-fade-in">
+         <div class="max-w-4xl mx-auto">
+            <h2 class="text-sm font-bold text-slate-500 uppercase mb-6 tracking-[0.2em] text-center">1. Encontrar Expediente de Paciente</h2>
+            <div class="relative group">
+               <i class="fas fa-search absolute left-6 top-6 text-slate-300 text-3xl group-focus-within:text-[#3498db] transition-colors"></i>
                <input 
                  [formControl]="searchControl" 
                  (input)="updateSearch($event)"
                  type="text" 
-                 placeholder="Nombre o DPI..." 
-                 class="w-full pl-10 p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
-             </div>
+                 placeholder="Escriba el nombre, apellido o número de DPI del paciente..." 
+                 class="w-full pl-20 p-8 bg-slate-50 border-2 border-slate-100 focus:bg-white focus:border-[#3498db] outline-none transition-all text-2xl font-bold text-slate-800 shadow-inner rounded-sm placeholder:text-slate-300 placeholder:font-light">
+               
+               @if (searchControl.value) {
+                  <button (click)="searchControl.setValue(''); searchTerm.set('')" class="absolute right-6 top-7 text-slate-300 hover:text-red-500 transition-colors">
+                     <i class="fas fa-times-circle text-2xl"></i>
+                  </button>
+               }
+            </div>
 
-             @if (searchTerm() && filteredPatients().length > 0) {
-               <div class="mt-4 space-y-2 max-h-60 overflow-y-auto">
-                 @for (patient of filteredPatients(); track patient.id) {
-                   <div (click)="selectPatient(patient)" 
-                     class="p-3 border border-slate-100 hover:bg-blue-50 hover:border-blue-200 cursor-pointer transition-colors flex justify-between items-center group">
-                      <div>
-                        <div class="font-bold text-slate-700 group-hover:text-blue-700">{{ patient.name }}</div>
-                        <div class="text-xs text-slate-400">DPI: {{ patient.dpi }}</div>
-                      </div>
-                      <i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-400"></i>
-                   </div>
-                 }
-               </div>
-             }
-          </div>
+            @if (searchTerm() && filteredPatients().length > 0) {
+              <div class="mt-8 space-y-3 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
+                <div class="text-[10px] font-bold text-[#3498db] uppercase tracking-widest mb-2 px-2">Resultados Encontrados</div>
+                @for (patient of filteredPatients(); track patient.id) {
+                  <div (click)="selectPatient(patient)" 
+                    class="p-6 border border-slate-100 bg-white hover:bg-blue-50/50 hover:border-blue-200 cursor-pointer transition-all flex justify-between items-center group rounded shadow-sm hover:shadow-lg">
+                     <div class="flex items-center gap-6">
+                        <div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-[#3498db] group-hover:text-white transition-all text-xl">
+                           <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                           <div class="font-black text-slate-800 text-2xl group-hover:text-[#3498db] mb-1 transition-colors capitalize">{{ patient.name }}</div>
+                           <div class="flex gap-4">
+                              <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded inline-block border border-slate-100">DPI: {{ patient.dpi }}</span>
+                              <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded inline-block border border-slate-100">NIT: {{ patient.nit || 'C/F' }}</span>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="flex flex-col items-end gap-2">
+                        <span class="text-[10px] font-bold text-slate-300 uppercase opacity-0 group-hover:opacity-100 transition-all">Seleccionar</span>
+                        <i class="fas fa-arrow-right text-slate-200 group-hover:text-[#3498db] group-hover:translate-x-3 transition-all text-3xl"></i>
+                     </div>
+                  </div>
+                }
+              </div>
+            }
+         </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-4 space-y-6">
 
           <!-- Patient Profile Card (If Selected) -->
           @if (selectedPatient(); as p) {
-            <div class="bg-white p-0 border border-slate-200 animate-fade-in overflow-hidden">
-               <div class="bg-[#2c3e50] p-4 text-white flex justify-between items-center">
-                 <span class="font-bold text-lg">Paciente Actual</span>
-                 <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            <div class="bg-white p-0 border border-slate-200 animate-fade-in overflow-hidden shadow-lg sticky top-6">
+               <div class="bg-slate-800 p-5 text-white flex justify-between items-center">
+                 <span class="font-bold text-lg uppercase tracking-wider">Expediente Actual</span>
+                 <div class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
                </div>
-               <div class="p-6">
-                  <div class="flex items-center gap-4 mb-6">
-                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl text-slate-400">
-                      <i class="fas fa-user"></i>
+               <div class="p-8">
+                  <div class="flex items-center gap-6 mb-8">
+                    <div class="w-20 h-20 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-3xl text-[#3498db] shadow-inner">
+                      <i class="fas fa-id-badge"></i>
                     </div>
-                    <div>
-                      <h3 class="text-xl font-bold text-slate-800">{{ p.name }}</h3>
-                      <p class="text-sm text-slate-500">{{ p.age }} años • {{ p.phone }}</p>
+                    <div class="flex-1 min-w-0">
+                      <h3 class="text-2xl font-black text-slate-800 mb-1 leading-tight uppercase truncate">{{ p.name }}</h3>
+                      <p class="text-slate-500 font-medium flex items-center gap-2">
+                         <i class="fas fa-calendar-alt text-slate-300"></i> {{ p.age }} años • {{ p.gender }}
+                      </p>
                     </div>
-                  </div>
-                  <div class="text-sm border-t border-slate-100 pt-4 mb-6">
-                     <p class="text-slate-400 text-xs uppercase font-bold mb-1">Historial Clínico</p>
-                     <p class="text-slate-700 italic">{{ p.history || 'Sin antecedentes registrados.' }}</p>
                   </div>
                   
-                  <button (click)="clearSelection()" class="w-full py-2 border border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-red-500 transition-colors text-xs font-bold uppercase tracking-wider flex justify-center items-center gap-2">
-                    <i class="fas fa-times"></i> Cambiar Paciente
+                  <div class="grid grid-cols-1 gap-4 mb-8">
+                     <div class="p-4 bg-slate-50 border border-slate-100 rounded">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">DPI</div>
+                        <div class="font-mono font-bold text-slate-700 text-base">{{ p.dpi }}</div>
+                     </div>
+                     <div class="p-4 bg-slate-50 border border-slate-100 rounded">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Teléfono</div>
+                        <div class="font-mono font-bold text-slate-700 text-base">{{ p.phone }}</div>
+                     </div>
+                  </div>
+
+                  <div class="text-sm border-t border-slate-100 pt-6 mb-8">
+                     <p class="text-slate-400 text-[10px] uppercase font-bold mb-3 tracking-widest flex items-center gap-2">
+                        <i class="fas fa-file-medical text-slate-300"></i> Notas Clínicas
+                     </p>
+                     <p class="text-slate-700 italic leading-relaxed text-base">{{ p.history || 'Sin antecedentes registrados.' }}</p>
+                  </div>
+                  
+                  <button (click)="clearSelection()" class="w-full py-4 border-2 border-slate-100 text-slate-400 hover:bg-red-50 hover:border-red-100 hover:text-red-500 transition-all text-xs font-black uppercase tracking-widest flex justify-center items-center gap-3">
+                    <i class="fas fa-sync-alt"></i> Buscar Otro Paciente
                   </button>
                </div>
             </div>
+          } @else {
+             <div class="bg-slate-50 p-12 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center rounded-lg text-slate-400 h-full min-h-[400px]">
+                <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center mb-6 shadow-sm border border-slate-100">
+                   <i class="fas fa-search text-3xl text-slate-200"></i>
+                </div>
+                <h3 class="font-bold text-slate-600 mb-2 text-lg uppercase tracking-widest">Paso 1</h3>
+                <p class="text-sm leading-relaxed font-medium">Use el buscador superior para seleccionar un paciente y habilitar el registro.</p>
+             </div>
           }
         </div>
 
-        <!-- RIGHT COLUMN: Actions & History (9 cols) -->
-        <div class="lg:col-span-9">
+        <!-- RIGHT COLUMN: Actions (8 cols) -->
+        <div class="lg:col-span-8">
           
           @if (selectedPatient()) {
              <!-- FORM: Add New Result -->
              <div class="bg-white p-8 border border-slate-200 mb-8 animate-fade-in relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-1 h-full bg-[#3498db]"></div>
                 
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
-                       <i class="fas fa-flask text-[#3498db]"></i> Ingresar Nuevo Resultado
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-2xl font-black text-slate-800 flex items-center gap-4">
+                       <i class="fas fa-flask text-[#3498db]"></i> 2. Ingresar Resultados
                     </h2>
                 </div>
                 
@@ -121,20 +163,28 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                         <!-- Dropdown List -->
                         @if (showExamDropdown() && filteredExamList().length > 0) {
                            <div class="absolute z-20 w-full mt-1 bg-white border border-slate-200 shadow-lg max-h-60 overflow-y-auto rounded-sm animate-fade-in">
-                              @for (exam of filteredExamList(); track exam.id) {
-                                 <div (mousedown)="selectExamFromSearch(exam)" class="p-3 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors group">
-                                    <div class="flex justify-between">
-                                       <span class="font-bold text-slate-700 group-hover:text-[#3498db]">{{ exam.name }}</span>
-                                       <span class="text-xs font-mono text-slate-400 bg-slate-100 px-1 rounded">{{ exam.code }}</span>
+                              @for (item of filteredExamList(); track item.id) {
+                                 <div (mousedown)="selectExamFromSearch(item)" class="p-3 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors group">
+                                    <div class="flex justify-between items-start">
+                                       <div>
+                                          <span class="font-bold text-slate-700 group-hover:text-[#3498db]">{{ item.name }}</span>
+                                          @if(item.isProfile) {
+                                            <span class="ml-2 px-1.5 py-0.5 bg-purple-50 text-purple-600 text-[9px] font-black rounded border border-purple-100 uppercase tracking-tighter">Perfil</span>
+                                          } @else {
+                                            <span class="ml-2 px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded border border-blue-100 uppercase tracking-tighter">Examen</span>
+                                          }
+                                       </div>
+                                       <span class="text-xs font-mono text-slate-400 bg-slate-100 px-1 rounded">{{ item.code }}</span>
                                     </div>
-                                    @if(exam.unit) {
-                                      <div class="text-xs text-slate-500 mt-1">Unidad: {{ exam.unit }}</div>
+                                    @if(!item.isProfile && item.unit) {
+                                      <div class="text-xs text-slate-500 mt-1">Unidad: {{ item.unit }}</div>
                                     }
                                  </div>
                               }
                            </div>
                         }
                       </div>
+
                       
                       <div>
                          <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Fecha del Análisis</label>
@@ -142,26 +192,51 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                       </div>
                    </div>
 
-                   <div>
-                      <div class="flex justify-between items-end mb-2">
-                         <label class="block text-xs font-bold text-slate-500 uppercase">Valores Obtenidos</label>
-                      </div>
-
-                      <!-- Reference Range Hint -->
-                      @if (currentExam(); as exam) {
-                         <div class="bg-blue-50 border border-blue-100 p-3 mb-2 rounded-sm text-sm text-blue-800 flex items-start gap-2 animate-fade-in">
-                            <i class="fas fa-info-circle mt-0.5"></i>
-                            <div>
-                               <div class="font-bold text-xs uppercase tracking-wide opacity-80">Referencia</div>
-                               <div>Rango esperado: <span class="font-mono font-bold">{{ exam.range }}</span></div>
-                               @if(exam.unit) { <div class="text-xs">Unidad: {{ exam.unit }}</div> }
-                               @if(exam.description) { <div class="text-xs mt-1 italic text-blue-600">{{ exam.description }}</div> }
-                            </div>
+                   @if (!selectedProfileId()) {
+                      <div>
+                         <div class="flex justify-between items-end mb-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Valores Obtenidos</label>
                          </div>
-                      }
 
-                      <textarea formControlName="values" rows="4" placeholder="Ej: 110" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 font-mono"></textarea>
-                   </div>
+                         <!-- Reference Range Hint -->
+                         @if (currentExam(); as exam) {
+                            <div class="bg-blue-50 border border-blue-100 p-3 mb-2 rounded-sm text-sm text-blue-800 flex items-start gap-2 animate-fade-in">
+                               <i class="fas fa-info-circle mt-0.5"></i>
+                               <div>
+                                  <div class="font-bold text-xs uppercase tracking-wide opacity-80">Referencia</div>
+                                  <div>Rango esperado: <span class="font-mono font-bold">{{ exam.range }}</span></div>
+                                  @if(exam.unit) { <div class="text-xs">Unidad: {{ exam.unit }}</div> }
+                                  @if(exam.description) { <div class="text-xs mt-1 italic text-blue-600">{{ exam.description }}</div> }
+                               </div>
+                            </div>
+                         }
+
+                         <textarea formControlName="values" rows="4" placeholder="Ej: 110" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 font-mono"></textarea>
+                      </div>
+                   } @else {
+                      <div class="space-y-4 bg-purple-50/50 p-6 border border-purple-100 rounded-sm animate-fade-in">
+                         <div class="flex items-center gap-2 text-purple-800 mb-2">
+                            <i class="fas fa-keyboard"></i>
+                            <span class="font-bold text-xs uppercase tracking-widest">Ingresar Resultados del Perfil</span>
+                         </div>
+                         
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @for (ex of profileExams(); track ex.id) {
+                               <div class="bg-white p-3 border border-purple-100 shadow-sm rounded-sm">
+                                  <label class="block text-[10px] font-black text-slate-500 mb-2 tracking-tight">
+                                     {{ ex.name }} 
+                                     @if(ex.unit) { <span class="text-purple-400">({{ ex.unit }})</span> }
+                                  </label>
+                                  <input 
+                                     type="text" 
+                                     [placeholder]="ex.range ? 'Ref: ' + ex.range : 'Ingrese Valor'"
+                                     (input)="updateProfileValue(ex.id, $event)"
+                                     class="w-full p-2 bg-slate-50 border border-slate-100 focus:bg-white focus:border-purple-400 outline-none text-sm font-mono text-slate-700 transition-all">
+                               </div>
+                            }
+                         </div>
+                      </div>
+                   }
 
                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
                       <button type="button" (click)="resetForm()" class="px-6 py-3 text-slate-500 hover:text-slate-800 transition-colors font-medium text-sm flex items-center gap-2">
@@ -187,6 +262,22 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                     <span class="bg-[#27ae60] text-white px-3 py-1 rounded-full text-xs font-bold">{{ stagedResults().length }} ítems</span>
                  </div>
 
+                 <!-- Campo de Número de Orden (Separado de los exámenes) -->
+                 <div class="mb-6 p-4 bg-white border border-slate-200 rounded-sm shadow-sm flex flex-col md:flex-row md:items-center gap-4 animate-fade-in border-l-4 border-l-[#27ae60]">
+                    <div class="flex items-center gap-3 text-slate-600 min-w-max">
+                       <i class="fas fa-barcode text-[#27ae60]"></i>
+                       <label class="font-bold text-xs uppercase tracking-widest text-slate-500">Número de Orden:</label>
+                    </div>
+                    <input 
+                       type="text" 
+                       [value]="orderNumber()"
+                       (input)="updateOrderNumber($event)"
+                       placeholder="INGRESAR EJ: ORD-001" 
+                       class="w-full md:w-64 p-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#27ae60] outline-none text-sm font-mono text-slate-700 transition-all rounded-sm font-bold uppercase shadow-inner placeholder:text-slate-300"
+                    >
+                    <p class="text-[10px] text-slate-400 font-medium italic">Este identificador aparecerá en el encabezado del reporte PDF.</p>
+                 </div>
+
                  <div class="space-y-3 mb-6">
                     @for (item of stagedResults(); track $index) {
                        <div class="bg-white p-4 border border-slate-200 flex justify-between items-start shadow-sm">
@@ -194,9 +285,14 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                              <div class="font-bold text-slate-700">{{ item.testName }}</div>
                              <div class="text-xs text-slate-500 font-mono mt-1">{{ item.values }}</div>
                           </div>
-                          <button (click)="removeStaged($index)" class="text-red-400 hover:text-red-600 p-1" title="Quitar de la lista">
-                             <i class="fas fa-trash-alt"></i>
-                          </button>
+                          <div class="flex gap-2">
+                             <button (click)="editStaged($index)" class="text-blue-500 hover:text-blue-700 p-1" title="Editar valor">
+                                <i class="fas fa-edit"></i>
+                             </button>
+                             <button (click)="removeStaged($index)" class="text-red-400 hover:text-red-600 p-1" title="Quitar de la lista">
+                                <i class="fas fa-trash-alt"></i>
+                             </button>
+                          </div>
                        </div>
                     }
                  </div>
@@ -243,7 +339,6 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                   <th class="p-6 border-b border-slate-200">Fecha</th>
                   <th class="p-6 border-b border-slate-200">Examen</th>
                   <th class="p-6 border-b border-slate-200">Paciente</th>
-                  <th class="p-6 border-b border-slate-200">Resumen de Valores</th>
                   <th class="p-6 border-b border-slate-200">Auditoría</th>
                   <th class="p-6 border-b border-slate-200 text-right">Acciones</th>
                 </tr>
@@ -259,11 +354,6 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                     </td>
                     <td class="p-6">
                       <div class="text-slate-800 font-medium text-base">{{ getPatientName(res.patientId) }}</div>
-                    </td>
-                    <td class="p-6">
-                       <div class="text-sm font-mono text-slate-600 max-w-[600px] overflow-hidden whitespace-normal break-words py-1 px-2 bg-slate-50 rounded border border-slate-100" title="{{ res.values }}">
-                          {{ res.values }}
-                       </div>
                     </td>
                     <td class="p-6">
                         <div class="flex flex-col text-xs text-slate-600 gap-1.5">
@@ -426,10 +516,13 @@ export class ResultsComponent {
    isProcessing = signal(false);
    successMessage = signal(false);
 
-   // AutoComplete Exam State
+   // AutoComplete Item State (Exams & Profiles)
    examSearchControl = new FormControl('');
    showExamDropdown = signal(false);
    examSearchTerm = signal('');
+   selectedProfileId = signal<string | null>(null);
+   profileValues = signal<Record<string, string>>({});
+   orderNumber = signal('');
 
    // Right Column State (History Table)
    historySearchTerm = signal('');
@@ -444,11 +537,12 @@ export class ResultsComponent {
 
    // Edit Modal State
    showEditModal = signal(false);
+   stagedEditIndex = signal<number | null>(null);
    resultToEdit = signal<LabResult | null>(null);
 
    resultForm = this.fb.group({
       examId: ['', Validators.required],
-      values: ['', Validators.required]
+      values: [''] // Made optional here, will validate in addToQueue if not profile
    });
 
    editForm = this.fb.group({
@@ -470,9 +564,16 @@ export class ResultsComponent {
 
    filteredExamList = computed(() => {
       const term = this.examSearchTerm().toLowerCase();
-      return this.db.exams().filter(e =>
-         e.name.toLowerCase().includes(term) ||
-         e.code.toLowerCase().includes(term)
+
+      const exams = this.db.exams().map(e => ({ ...e, isProfile: false }));
+      const profiles = this.db.profiles().map(p => ({ ...p, isProfile: true, code: 'PERFIL', unit: undefined, range: undefined }));
+
+      const combined = [...exams, ...profiles];
+
+      if (!term) return combined;
+      return combined.filter(item =>
+         item.name.toLowerCase().includes(term) ||
+         (item.code && item.code.toLowerCase().includes(term))
       );
    });
 
@@ -480,6 +581,18 @@ export class ResultsComponent {
       const id = this.selectedExamId();
       if (!id) return null;
       return this.db.exams().find(e => e.id === id);
+   });
+
+   currentProfile = computed(() => {
+      const id = this.selectedProfileId();
+      if (!id) return null;
+      return this.db.profiles().find(p => p.id === id);
+   });
+
+   profileExams = computed(() => {
+      const id = this.selectedProfileId();
+      if (!id) return [];
+      return this.db.exams().filter(e => e.profile_id === id);
    });
 
    // --- COMPUTED FOR HISTORY TABLE ---
@@ -542,17 +655,36 @@ export class ResultsComponent {
       }
    }
 
-   // --- Exam Autocomplete Logic ---
-   selectExamFromSearch(exam: Exam) {
-      this.selectedExamId.set(exam.id);
-      this.resultForm.get('examId')?.setValue(exam.id);
-      this.examSearchControl.setValue(exam.name);
-      this.examSearchTerm.set(exam.name); // Keep sync
+   updateProfileValue(examId: string, event: Event) {
+      const value = (event.target as HTMLInputElement).value;
+      this.profileValues.update(vals => ({ ...vals, [examId]: value }));
+   }
+
+   updateOrderNumber(event: Event) {
+      const value = (event.target as HTMLInputElement).value;
+      this.orderNumber.set(value);
+   }
+
+   // --- Exam/Profile Autocomplete Logic ---
+   selectExamFromSearch(item: any) {
+      this.profileValues.set({}); // Reset profile values
+      if (item.isProfile) {
+         this.selectedProfileId.set(item.id);
+         this.selectedExamId.set('');
+         this.resultForm.get('examId')?.setValue('PROFILE');
+      } else {
+         this.selectedProfileId.set(null);
+         this.selectedExamId.set(item.id);
+         this.resultForm.get('examId')?.setValue(item.id);
+      }
+      this.examSearchControl.setValue(item.name);
+      this.examSearchTerm.set(item.name);
       this.showExamDropdown.set(false);
    }
 
    clearExamSelection() {
       this.selectedExamId.set('');
+      this.selectedProfileId.set(null);
       this.resultForm.get('examId')?.setValue('');
       this.examSearchControl.setValue('');
       this.examSearchTerm.set('');
@@ -578,6 +710,8 @@ export class ResultsComponent {
    resetForm() {
       this.resultForm.reset();
       this.selectedExamId.set('');
+      this.selectedProfileId.set(null);
+      this.profileValues.set({});
       this.examSearchControl.setValue('');
       this.examSearchTerm.set('');
    }
@@ -606,6 +740,18 @@ export class ResultsComponent {
 
    // --- EDIT ACTION ---
    editResult(res: LabResult) {
+      this.stagedEditIndex.set(null); // Clear staged index if editing from history
+      this.resultToEdit.set(res);
+      this.editForm.patchValue({
+         testName: res.testName,
+         values: res.values
+      });
+      this.showEditModal.set(true);
+   }
+
+   editStaged(index: number) {
+      const res = this.stagedResults()[index];
+      this.stagedEditIndex.set(index);
       this.resultToEdit.set(res);
       this.editForm.patchValue({
          testName: res.testName,
@@ -618,27 +764,39 @@ export class ResultsComponent {
       const res = this.resultToEdit();
       if (!res || this.editForm.invalid) return;
 
-      this.isProcessing.set(true);
-      try {
-         const updatedData = {
-            testName: this.editForm.value.testName!,
-            values: this.editForm.value.values!
-         };
+      const updatedData = {
+         testName: this.editForm.value.testName!,
+         values: this.editForm.value.values!
+      };
 
-         await this.db.updateFullResult(res.id, updatedData);
-         this.showEditModal.set(false);
-         this.resultToEdit.set(null);
-      } catch (error) {
-         console.error('Error updating result:', error);
-         alert('Error al actualizar el resultado.');
-      } finally {
-         this.isProcessing.set(false);
+      if (this.stagedEditIndex() !== null) {
+         // Update staged list (local state only)
+         const index = this.stagedEditIndex()!;
+         this.stagedResults.update(list => {
+            const newList = [...list];
+            newList[index] = { ...newList[index], ...updatedData };
+            return newList;
+         });
+         this.closeEditModal();
+      } else {
+         // Update DB (Historical record)
+         this.isProcessing.set(true);
+         try {
+            await this.db.updateFullResult(res.id, updatedData);
+            this.closeEditModal();
+         } catch (error) {
+            console.error('Error updating result:', error);
+            alert('Error al actualizar el resultado.');
+         } finally {
+            this.isProcessing.set(false);
+         }
       }
    }
 
    closeEditModal() {
       this.showEditModal.set(false);
       this.resultToEdit.set(null);
+      this.stagedEditIndex.set(null);
       this.editForm.reset();
    }
 
@@ -719,20 +877,41 @@ export class ResultsComponent {
       if (this.resultForm.invalid || !this.selectedPatient()) return;
 
       const formVal = this.resultForm.value;
-      const exam = this.db.exams().find(e => e.id === formVal.examId);
+      const patientId = this.selectedPatient()!.id;
 
-      if (!exam) return;
+      if (this.selectedProfileId()) {
+         // Add all exams in profile
+         const exams = this.profileExams();
+         const currentVals = this.profileValues();
 
-      const newResult: LabResult = {
-         id: Math.floor(Math.random() * 100000).toString(),
-         patientId: this.selectedPatient()!.id,
-         testName: exam.name,
-         date: this.todayDate,
-         values: formVal.values!,
-         status: 'Pendiente'
-      };
+         const results: LabResult[] = exams.map(exam => ({
+            id: Math.floor(Math.random() * 100000).toString(),
+            patientId,
+            testName: exam.name,
+            date: this.todayDate,
+            values: currentVals[exam.id] || 'Pendiente',
+            status: 'Pendiente'
+         }));
+         this.stagedResults.update(list => [...list, ...results]);
+      } else {
+         if (!formVal.values) {
+            alert('Por favor, ingrese el valor del examen.');
+            return;
+         }
+         const exam = this.db.exams().find(e => e.id === formVal.examId);
+         if (!exam) return;
 
-      this.stagedResults.update(list => [...list, newResult]);
+         const newResult: LabResult = {
+            id: Math.floor(Math.random() * 100000).toString(),
+            patientId,
+            testName: exam.name,
+            date: this.todayDate,
+            values: formVal.values!,
+            status: 'Pendiente'
+         };
+         this.stagedResults.update(list => [...list, newResult]);
+      }
+
       this.resetForm();
    }
 
@@ -772,7 +951,8 @@ export class ResultsComponent {
          testName: combinedName,
          date: this.todayDate,
          values: combinedValues,
-         status: 'Finalizado'
+         status: 'Finalizado',
+         orderNumber: this.orderNumber()
       };
 
       this.db.addLabResult(newResult);
@@ -785,6 +965,7 @@ export class ResultsComponent {
       this.isProcessing.set(false);
       this.stagedResults.set([]);
       this.selectedPatient.set(null);
+      this.orderNumber.set(''); // Clear order number
       this.successMessage.set(true);
       setTimeout(() => this.successMessage.set(false), 3000);
    }
@@ -792,12 +973,26 @@ export class ResultsComponent {
    // --- BATCH LOGIC END ---
 
    generatePdf(res: LabResult, mode: 'view' | 'download' = 'download') {
-      const printWindow = window.open('', '', 'width=900,height=1100');
-      if (!printWindow) return;
+      const patient = this.db.patients().find(p => p.id === res.patientId);
+      const patientName = patient ? patient.name.replace(/\s+/g, '_') : 'Paciente';
+      const fileName = `Resultado_${patientName}.pdf`;
 
-      const html = this.getReportHtml(res, mode);
-      printWindow.document.write(html);
-      printWindow.document.close();
+      if (mode === 'download') {
+         const html = this.getReportHtml(res, mode);
+         (window as any).html2pdf().from(html).set({
+            margin: 0,
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+         }).save();
+      } else {
+         const printWindow = window.open('', '', 'width=900,height=1100');
+         if (!printWindow) return;
+         const html = this.getReportHtml(res, mode);
+         printWindow.document.write(html);
+         printWindow.document.close();
+      }
    }
 
    getReportHtml(res: LabResult, mode: 'view' | 'download' | 'email'): string {
@@ -938,7 +1133,7 @@ export class ResultsComponent {
                 <p style="font-size: 11px; margin: 2px 0;">Manzana G, Casa 24 Residenciales Valle del Quetzal Km. 28 zona 0,</p>
                 <p style="font-size: 11px; margin: 2px 0;">San Juan Sacatepéquez, Guatemala</p>
                 <p style="font-size: 11px; font-weight: 500; margin: 2px 0;">TEL: 4240-7376 | e-mail: biosalud.lcb@gmail.com</p>
-                <p style="font-size: 13px; font-weight: bold; margin-top: 5px;">Licda. Yénnifer Soto - Química Bióloga (Col. 6,808)</p>
+                <p style="font-size: 13px; font-weight: bold; margin-top: 5px;">Licda. Yenifer Soto - Química Bióloga (Col. 6,808)</p>
              </div>
           </div>
 
@@ -976,8 +1171,8 @@ export class ResultsComponent {
 
           <div class="signature-section">
              <div class="signature-line">${signatureHtml}</div>
-             <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yénnifer Soto</p>
-             <p style="font-size: 10px; color: #64748b; margin: 0;">Química Bióloga, Colegiado No. 6, 808</p>
+             <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yenifer Soto</p>
+             <p style="font-size: 10px; color: #64748b; margin: 0;">Química Bióloga, Col. 6,808</p>
           </div>
 
           <div class="page-footer">

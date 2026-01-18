@@ -241,7 +241,7 @@ import { DbService, Exam } from '../../../core/services/db.service';
                   </td>
                   <td class="p-4 text-slate-600 text-sm">
                     <span class="block font-mono font-bold">{{ item.range }}</span>
-                    <span class="block text-[10px] text-slate-400 uppercase">{{ item.unit }}</span>
+                    <span class="block text-[10px] text-slate-400">{{ item.unit }}</span>
                   </td>
                   <td class="p-4 text-slate-700 font-mono font-bold">Q{{ item.price | number:'1.2-2' }}</td>
                 } @else if (view() === 'profile') {
