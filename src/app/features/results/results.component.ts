@@ -937,32 +937,90 @@ export class ResultsComponent {
       this.isProcessing.set(true);
 
       const uniqueTests = [...new Set(this.stagedResults().map(r => r.testName))];
-      const combinedName = uniqueTests.length > 1
+      let combinedName = uniqueTests.length > 1
          ? `Panel Integral (${uniqueTests.length} Exámenes)`
          : (uniqueTests[0] || 'Resultado General');
 
-      let combinedValues = "";
-      this.stagedResults().forEach((res, index) => {
-         const examDef = this.db.exams().find(e => e.name === res.testName);
-         const rangeStr = examDef ? examDef.range : 'No especificado';
-         const unitStr = examDef ? examDef.unit : '';
+      const exams = this.db.exams();
+      const profiles = this.db.profiles();
+      const methods = this.db.methodologies();
+      const methodSet = new Set<string>();
 
-         combinedValues += `► ${res.testName.toUpperCase()}\n`;
-         combinedValues += `   Rango Ref: ${rangeStr}\n`;
-         combinedValues += `   Unidad:    ${unitStr}\n`;
-         combinedValues += `   Valor:     ${res.values}\n`;
-
-         if (index < this.stagedResults().length - 1) {
-            combinedValues += `\n`;
+      this.stagedResults().forEach(r => {
+         const e = exams.find(ex => ex.name === r.testName);
+         if (e && e.profile_id) {
+            const p = profiles.find(pr => pr.id === e.profile_id);
+            if (p && p.methodology_id) {
+               const m = methods.find(met => met.id === p.methodology_id);
+               if (m) methodSet.add(m.name);
+            }
          }
       });
+
+      if (methodSet.size > 0) {
+         combinedName += ` - Metodología: ${Array.from(methodSet).join(', ')}`;
+      }
+
+      let combinedValues = "";
+
+      // Grouping Logic
+      const grouped: Record<string, LabResult[]> = {};
+      const noProfile: LabResult[] = [];
+
+      // 1. Sort into buckets
+      for (const res of this.stagedResults()) {
+         const exam = exams.find(e => e.name === res.testName);
+         if (exam && exam.profile_id) {
+            if (!grouped[exam.profile_id]) grouped[exam.profile_id] = [];
+            grouped[exam.profile_id].push(res);
+         } else {
+            noProfile.push(res);
+         }
+      }
+
+      // 2. Build String for Profiles
+      for (const [profileId, results] of Object.entries(grouped)) {
+         const profile = profiles.find(p => p.id === profileId);
+         const pName = profile ? profile.name : 'Perfil';
+
+         combinedValues += `■ ${pName}\n`;
+
+         results.forEach(res => {
+            const examDef = exams.find(e => e.name === res.testName);
+            const rangeStr = examDef ? examDef.range : 'No especificado';
+            const unitStr = examDef ? examDef.unit : '';
+
+            combinedValues += `► ${res.testName.toUpperCase()}\n`;
+            combinedValues += `   Rango Ref: ${rangeStr}\n`;
+            combinedValues += `   Unidad:    ${unitStr}\n`;
+            combinedValues += `   Valor:     ${res.values}\n\n`; // Double newline for spacing
+         });
+      }
+
+      // 3. Build String for Individual Exams
+      if (noProfile.length > 0) {
+         if (Object.keys(grouped).length > 0) {
+            combinedValues += `■ Exámenes Individuales\n`;
+         }
+
+         noProfile.forEach(res => {
+            const examDef = exams.find(e => e.name === res.testName);
+            const rangeStr = examDef ? examDef.range : 'No especificado';
+            const unitStr = examDef ? examDef.unit : '';
+
+            combinedValues += `► ${res.testName.toUpperCase()}\n`;
+            combinedValues += `   Rango Ref: ${rangeStr}\n`;
+            combinedValues += `   Unidad:    ${unitStr}\n`;
+            combinedValues += `   Valor:     ${res.values}\n\n`;
+         });
+      }
 
       const newResult: LabResult = {
          id: Math.floor(Math.random() * 100000).toString(),
          patientId: this.selectedPatient()!.id,
          testName: combinedName,
          date: this.todayDate,
-         values: combinedValues,
+         values: combinedValues.trim(),
          status: 'Finalizado',
          orderNumber: this.orderNumber()
       };
@@ -984,39 +1042,96 @@ export class ResultsComponent {
 
    // --- BATCH LOGIC END ---
 
-   generatePdf(res: LabResult, mode: 'view' | 'download' = 'download') {
+   async generatePdf(res: LabResult, mode: 'view' | 'download' = 'download') {
       const patient = this.db.patients().find(p => p.id === res.patientId);
       const patientName = patient ? patient.name.replace(/\s+/g, '_') : 'Paciente';
       const fileName = `Resultado_${patientName}.pdf`;
 
-      if (mode === 'download') {
-         const html = this.getReportHtml(res, mode);
+      // Always use 'download' mode for HTML to ensure clean base styles (no @page margins interfering)
+      const html = this.getReportHtml(res, 'download');
 
-         (window as any).html2pdf().from(html).set({
-            margin: 15,
-            filename: fileName,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 3, useCORS: true, allowTaint: true, letterRendering: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
-         }).toPdf().get('pdf').then((pdf: any) => {
-            const totalPages = pdf.internal.getNumberOfPages();
-            for (let i = 1; i <= totalPages; i++) {
-               pdf.setPage(i);
-               pdf.setFontSize(9);
-               pdf.setTextColor(148, 163, 184); // slate-400
-               const text = `Página ${i} de ${totalPages}`;
-               const pageWidth = pdf.internal.pageSize.getWidth();
-               const pageHeight = pdf.internal.pageSize.getHeight();
-               const textWidth = pdf.getStringUnitWidth(text) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
-               pdf.text(text, (pageWidth - textWidth) / 2, pageHeight - 10);
-            }
-         }).save();
-      } else {
-         const printWindow = window.open('', '', 'width=900,height=1100');
-         if (!printWindow) return;
-         const html = this.getReportHtml(res, mode);
-         printWindow.document.write(html);
-         printWindow.document.close();
+      let printWindow: Window | null = null;
+      if (mode === 'view') {
+         printWindow = window.open('', '_blank');
+         if (printWindow) {
+            printWindow.document.write(`
+               <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#64748b;">
+                  <div style="margin-bottom:10px;font-weight:bold;">Generando Reporte Oficial...</div>
+                  <div style="font-size:12px;">Por favor espere</div>
+               </div>
+            `);
+         }
+      }
+
+      const worker = (window as any).html2pdf().from(html).set({
+         margin: 15,
+         filename: fileName,
+         image: { type: 'jpeg', quality: 0.98 },
+         html2canvas: { scale: 3, useCORS: true, allowTaint: true, letterRendering: true },
+         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+      });
+
+      try {
+         // 1. WAIT FOR CRITICAL RESOURCES (Avoids first-run layout shifts)
+         await document.fonts.ready;
+         const logoUrl = this.db.labLogo();
+         if (typeof logoUrl === 'string' && logoUrl.startsWith('http')) {
+            const img = new Image();
+            img.src = logoUrl;
+            await new Promise(r => {
+               if (img.complete) r(true);
+               else { img.onload = () => r(true); img.onerror = () => r(false); }
+            });
+         }
+
+         // 2. Start PDF generation with a slightly longer safety delay (1.5s)
+         await worker.toContainer();
+         await new Promise(resolve => setTimeout(resolve, 1500));
+         await worker.toCanvas();
+         await worker.toImg();
+         await worker.toPdf();
+
+         const pdf = await worker.get('pdf');
+         const totalPages = pdf.internal.getNumberOfPages();
+         const dateStr = `Impreso el: ${new Date().toLocaleString('es-GT')}`;
+         const labName = 'Laboratorio BioSalud Huehuetenango';
+
+         for (let i = 1; i <= totalPages; i++) {
+            pdf.setPage(i);
+            pdf.setFontSize(8); // Slightly smaller for footer
+            pdf.setTextColor(148, 163, 184); // slate-400
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const footerY = pageHeight - 10;
+
+            // Left: Date
+            pdf.text(dateStr, 15, footerY);
+
+            // Center: Page Number
+            const pageText = `Página ${i} de ${totalPages}`;
+            const pageTextWidth = pdf.getStringUnitWidth(pageText) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+            pdf.text(pageText, (pageWidth - pageTextWidth) / 2, footerY);
+
+            // Right: Lab Name
+            const labTextWidth = pdf.getStringUnitWidth(labName) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+            pdf.text(labName, pageWidth - 15 - labTextWidth, footerY);
+
+            // Top Line for Footer
+            pdf.setDrawColor(203, 213, 225); // slate-300
+            pdf.line(15, footerY - 5, pageWidth - 15, footerY - 5);
+         }
+
+         if (mode === 'download') {
+            await worker.save();
+         } else if (mode === 'view' && printWindow) {
+            const pdfUrl = await worker.output('bloburl');
+            printWindow.location.href = pdfUrl;
+         }
+      } catch (error) {
+         console.error('Pdf Generation Error:', error);
+         if (printWindow) printWindow.close();
+         alert('Error al generar el documento PDF.');
       }
    }
 
@@ -1037,7 +1152,7 @@ export class ResultsComponent {
          : `<div style="height:40px;"></div><span style="font-family: 'Brush Script MT', cursive; font-size: 20px; color: #475569; font-weight: bold; font-style: italic;">${res.createdBy || 'Bioquímico'}</span>`;
 
       const logoHtml = logoImage
-         ? `<img src="${logoImage}" style="width: 110px; height: auto; display: block; margin: 0 auto 5px auto;" alt="Logo">`
+         ? `<img src="${logoImage}" style="width: 110px; height: auto; display: block; margin: 0 auto;" alt="Logo">`
          : `<svg width="80" height="80" viewBox="0 0 100 100" style="margin-bottom: 10px;">
                  <path d="M50 90 C10 60 5 35 25 15 A20 20 0 0 1 50 35 A20 20 0 0 1 75 15 C95 35 90 60 50 90" fill="none" stroke="#1abc9c" stroke-width="3"/>
                  <path d="M20 50 L35 50 L45 30 L55 70 L65 50 L80 50" fill="none" stroke="#1abc9c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1092,6 +1207,41 @@ export class ResultsComponent {
            `;
       }
 
+      // --- METHODOLOGY EXTRACTION ---
+      const methodSet = new Set<string>();
+      const linesVal = String(res.values || '').split('\n');
+      const examNames = linesVal.filter(l => l.trim().startsWith('►')).map(l => l.replace('►', '').trim().toUpperCase());
+
+      const allExams = this.db.exams();
+      const allProfiles = this.db.profiles();
+      const allMethods = this.db.methodologies();
+
+      if (examNames.length > 0) {
+         allExams.forEach(e => {
+            if (examNames.includes(e.name.toUpperCase())) {
+               if (e.profile_id) {
+                  const p = allProfiles.find(pr => pr.id === e.profile_id);
+                  if (p && p.methodology_id) {
+                     const m = allMethods.find(met => met.id === p.methodology_id);
+                     if (m) methodSet.add(m.name);
+                  }
+               }
+            }
+         });
+      } else {
+         const e = allExams.find(x => x.name === res.testName);
+         if (e && e.profile_id) {
+            const p = allProfiles.find(pr => pr.id === e.profile_id);
+            if (p && p.methodology_id) {
+               const m = allMethods.find(met => met.id === p.methodology_id);
+               if (m) methodSet.add(m.name);
+            }
+         }
+      }
+
+      const methodText = methodSet.size > 0 ? Array.from(methodSet).join(', ') : '';
+      const methodHtml = methodText ? `<div style="font-size: 11px; font-weight: normal; margin-top: 5px; color: #475569;">Metodología: ${methodText}</div>` : '';
+
       return `
        <!DOCTYPE html>
        <html lang="es">
@@ -1107,14 +1257,14 @@ export class ResultsComponent {
                  color: #1e293b;
                  line-height: 1.4;
              }
-             .header-container { display: flex; align-items: flex-start; margin-bottom: 20px; }
+             .header-container { display: flex; align-items: center; margin-bottom: 10px; }
              .logo-box { width: 20%; text-align: center; }
              .details-box { flex: 1; text-align: center; }
              .patient-box { 
                  border: 2px solid #1e293b; 
                  border-radius: 15px; 
                  padding: 15px; 
-                 margin-bottom: 25px;
+                 margin-bottom: 20px;
                  display: grid;
                  grid-template-columns: 1fr 1fr;
                  gap: 5px;
@@ -1135,6 +1285,8 @@ export class ResultsComponent {
              .footer-disclaimer {
                  font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0;
                  padding-top: 10px; text-align: justify; margin-bottom: 40px;
+                 page-break-inside: avoid;
+                 break-inside: avoid;
              }
                            .signature-section { text-align: center; width: 250px; margin: 40px auto 0 auto; page-break-inside: avoid; }
 
@@ -1190,22 +1342,22 @@ export class ResultsComponent {
              ${tableRowsHtml}
           </table>
 
-          <div class="footer-disclaimer">
-             Nuestro proceso analítico completo se somete a rigurosos controles de calidad, utilizando herramientas estadísticas avanzadas para laboratorios clínicos. Esto garantiza la precisión y confiabilidad de todos nuestros resultados.
-             <br><br>
-             <span style="font-weight: bold; color: black;">El original de este documento se encuentra en los archivos de Laboratorio BioSalud Huehuetenango. El uso de este documento es responsabilidad exclusiva del cliente.</span>
-          </div>
+           <!-- Wrap disclaimer and signature to prevent them from splitting separately -->
+           <div style="page-break-inside: avoid; break-inside: avoid; margin-top: 20px;">
+              <div class="footer-disclaimer">
+                 Nuestro proceso analítico completo se somete a rigurosos controles de calidad, utilizando herramientas estadísticas avanzadas para laboratorios clínicos. Esto garantiza la precisión y confiabilidad de todos nuestros resultados.
+                 <br><br>
+                 <span style="font-weight: bold; color: black;">El original de este documento se encuentra en los archivos de Laboratorio BioSalud Huehuetenango. El uso de este documento es responsabilidad exclusiva del cliente.</span>
+              </div>
 
-          <div class="signature-section">
-             <div class="signature-line">${signatureHtml}</div>
-             <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yenifer Soto</p>
-             <p style="font-size: 10px; color: #64748b; margin: 0;">Química Bióloga, Col. 6,808</p>
-          </div>
+              <div class="signature-section">
+                 <div class="signature-line">${signatureHtml}</div>
+                 <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yenifer Soto</p>
+                 <p style="font-size: 10px; color: #64748b; margin: 0;">Química Bióloga, Col. 6,808</p>
+              </div>
+           </div>
 
-          <div class="page-footer">
-             <div>Impreso el: ${new Date().toLocaleString('es-GT')}</div>
-             <div>Laboratorio BioSalud Huehuetenango</div>
-          </div>
+
 
           ${printScript}
        </body>
