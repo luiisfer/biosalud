@@ -91,8 +91,8 @@ import { DbService, Patient } from '../../../core/services/db.service';
          </div>
       </div>
 
-      <div class="bg-white border border-slate-200">
-        <table class="w-full text-left border-collapse">
+      <div class="bg-white border border-slate-200 overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[1000px]">
           <thead class="bg-slate-50 text-slate-500 uppercase text-xs font-bold tracking-wider">
                 <tr>
               <th class="p-4 border-b border-slate-200">DPI</th>

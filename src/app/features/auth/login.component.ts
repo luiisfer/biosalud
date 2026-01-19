@@ -62,7 +62,7 @@ import { DbService } from '../../../core/services/db.service';
           
           <div class="border-t border-slate-100 pt-4 w-full">
             <div class="flex items-center justify-center gap-2 text-xs bg-slate-50 p-2 rounded-sm border border-slate-100">
-                <span class="font-bold text-slate-500 uppercase">Estado Supabase:</span>
+                <span class="font-bold text-slate-500 uppercase">Estado BD:</span>
                 @if(db.connectionStatus() === 'checking') {
                     <span class="text-yellow-600 flex items-center gap-1"><i class="fas fa-circle-notch fa-spin"></i> Verificando...</span>
                 }
