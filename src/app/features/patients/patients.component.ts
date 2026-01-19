@@ -194,7 +194,7 @@ import { DbService, Patient } from '../../../core/services/db.service';
                        <i class="fas fa-history text-[#1abc9c]"></i> Historial de Resultados
                     </h3>
                     <p class="text-slate-400 text-sm mt-1">
-                       {{ selectedHistoryPatient()?.name }} (ID: {{ selectedHistoryPatient()?.id }})
+                       {{ selectedHistoryPatient()?.name }} (DPI: {{ selectedHistoryPatient()?.dpi }})
                     </p>
                  </div>
                  <button (click)="closeHistory()" class="text-slate-400 hover:text-white transition-colors text-xl">
@@ -224,7 +224,7 @@ import { DbService, Patient } from '../../../core/services/db.service';
                                    <div>
                                       <h4 class="font-bold text-slate-800 text-lg">{{ result.testName }}</h4>
                                       <p class="text-xs text-slate-500 uppercase font-bold tracking-wide mt-1">
-                                         <i class="far fa-calendar-alt mr-1"></i> {{ result.date }}
+                                         <i class="far fa-calendar-alt mr-1"></i> {{ result.date | date:'dd/MM/yyyy' }}
                                       </p>
                                    </div>
                                    <span class="text-[10px] font-bold uppercase tracking-widest px-2 py-1 border rounded-sm"
@@ -251,7 +251,7 @@ import { DbService, Patient } from '../../../core/services/db.service';
                                    <div>
                                       Reg. por: {{ result.createdBy || 'Sistema' }}
                                    </div>
-                                   <div>ID Ref: {{ result.id }}</div>
+                                   <div>Orden: {{ result.orderNumber || 'S/N' }}</div>
                                 </div>
                              </div>
                           </div>
