@@ -432,7 +432,11 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                  </p>
                  
                  <div class="bg-slate-50 border border-slate-200 p-3 mb-6 rounded-sm">
-                    <p class="font-mono text-sm font-bold text-slate-700">{{ emailTarget()?.email }}</p>
+                    @if (emailTarget()?.email) {
+                       <p class="font-mono text-sm font-bold text-slate-700">{{ emailTarget()?.email }}</p>
+                    } @else {
+                       <p class="text-sm font-bold text-red-500"><i class="fas fa-exclamation-triangle"></i> No hay correo registrado</p>
+                    }
                     <p class="text-xs text-slate-400 mt-1">Paciente: {{ emailTarget()?.name }}</p>
                  </div>
 
@@ -450,8 +454,38 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
               
               <div class="p-5 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
                  <button (click)="closeEmailModal()" [disabled]="emailStatus() === 'sending'" class="px-4 py-2 text-slate-500 font-bold text-sm hover:text-slate-800 transition-colors">Cancelar</button>
-                 <button (click)="confirmSendEmail()" [disabled]="emailStatus() === 'sending' || emailStatus() === 'success'" class="bg-[#3498db] text-white px-6 py-2 hover:bg-[#2980b9] disabled:opacity-50 disabled:cursor-not-allowed font-bold uppercase text-xs tracking-wide transition-colors shadow-sm flex items-center gap-2">
+                 <button (click)="confirmSendEmail()" [disabled]="emailStatus() === 'sending' || emailStatus() === 'success' || !emailTarget()?.email" class="bg-[#3498db] text-white px-6 py-2 hover:bg-[#2980b9] disabled:opacity-50 disabled:cursor-not-allowed font-bold uppercase text-xs tracking-wide transition-colors shadow-sm flex items-center gap-2">
                     Enviar PDF
+                 </button>
+              </div>
+           </div>
+        </div>
+      }
+
+      <!-- NO EMAIL WARNING MODAL -->
+      @if (showNoEmailModal()) {
+        <div class="fixed inset-0 bg-slate-900/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fade-in">
+           <div class="bg-white max-w-sm w-full border border-slate-200 shadow-2xl flex flex-col rounded-sm">
+              <div class="bg-amber-500 text-white p-5 flex justify-between items-center">
+                 <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle text-white"></i> Sin Correo
+                 </h3>
+                 <button (click)="closeNoEmailModal()" class="text-white/80 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                 </button>
+              </div>
+              <div class="p-8 text-center">
+                 <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5 text-amber-600 text-3xl animate-bounce-subtle">
+                    <i class="fas fa-envelope-open"></i>
+                 </div>
+                 
+                 <h4 class="font-bold text-slate-800 text-lg mb-2">No hay correo registrado</h4>
+                 <p class="text-slate-500 text-sm mb-6 leading-relaxed px-4">
+                    El paciente <span class="font-bold text-slate-700">{{ emailTarget()?.name }}</span> no tiene una dirección de correo electrónico configurada.
+                 </p>
+                 
+                 <button (click)="closeNoEmailModal()" class="w-full bg-slate-800 text-white py-3 rounded-sm font-bold uppercase text-xs hover:bg-slate-700 transition-colors shadow-sm tracking-widest">
+                    Entendido
                  </button>
               </div>
            </div>
@@ -534,6 +568,7 @@ export class ResultsComponent {
    emailTarget = signal<Patient | null>(null);
    resultToEmail = signal<LabResult | null>(null);
    emailStatus = signal<'idle' | 'sending' | 'success'>('idle');
+   showNoEmailModal = signal(false);
 
    // Edit Modal State
    showEditModal = signal(false);
@@ -808,21 +843,27 @@ export class ResultsComponent {
          alert('Error: Paciente no encontrado.');
          return;
       }
-      if (!patient.email || patient.email.trim() === '') {
-         alert('El paciente no tiene un correo electrónico registrado.');
-         return;
-      }
 
       this.emailTarget.set(patient);
       this.resultToEmail.set(res);
       this.emailStatus.set('idle');
-      this.showEmailModal.set(true);
+
+      if (!patient.email || patient.email.trim() === '') {
+         this.showNoEmailModal.set(true);
+      } else {
+         this.showEmailModal.set(true);
+      }
    }
 
    closeEmailModal() {
       this.showEmailModal.set(false);
       this.emailTarget.set(null);
       this.resultToEmail.set(null);
+   }
+
+   closeNoEmailModal() {
+      this.showNoEmailModal.set(false);
+      this.emailTarget.set(null);
    }
 
    async confirmSendEmail() {
@@ -864,6 +905,7 @@ export class ResultsComponent {
             return dataUri.split(',')[1];
          });
 
+         if (!patient.email) throw new Error('Paciente no tiene correo configurado');
          const success = await this.db.sendResultEmail(patient.email, patient.name, result, pdfBase64);
 
          if (success) {

@@ -126,8 +126,8 @@ import { DbService, Patient } from '../../../core/services/db.service';
                 </td>
                 <td class="p-4 text-slate-600">{{ patient.age }}</td>
                 <td class="p-4 text-slate-600">
-                  <div class="text-sm">{{ patient.email }}</div>
-                  <div class="text-xs text-slate-400">{{ patient.phone }}</div>
+                  <div class="text-sm">{{ patient.email || 'Sin correo' }}</div>
+                  <div class="text-xs text-slate-400">{{ patient.phone || 'Sin teléfono' }}</div>
                 </td>
                 <td class="p-4 text-slate-600 text-sm italic">{{ patient.birthDate || 'No reg.' }}</td>
                 <td class="p-4">
@@ -333,8 +333,8 @@ export class PatientsComponent {
     birthDate: ['', Validators.required],
     gender: ['Masculino', Validators.required],
     age: [{ value: null as number | null, disabled: true }, [Validators.required, Validators.min(0)]],
-    email: ['', [Validators.required, Validators.email]],
-    phone: ['', Validators.required],
+    email: ['', [Validators.email]],
+    phone: [''],
     doctor: [''],
     history: ['']
   });

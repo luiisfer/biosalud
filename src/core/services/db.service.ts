@@ -66,8 +66,8 @@ export interface Patient {
   doctor?: string;
   gender: 'Masculino' | 'Femenino';
   age: number;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   history: string;
   createdBy?: string;
   lastModifiedBy?: string;
