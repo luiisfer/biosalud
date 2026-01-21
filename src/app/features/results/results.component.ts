@@ -326,7 +326,7 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                <input 
                  (input)="updateHistorySearch($event)" 
                  type="text" 
-                 placeholder="Buscar por Paciente, Examen, ID o Valor..." 
+                 placeholder="Buscar por Paciente, Orden, Examen..." 
                  class="w-full pl-10 p-2.5 bg-white border border-slate-300 focus:border-[#3498db] outline-none text-sm text-slate-700 transition-all rounded-sm shadow-sm">
             </div>
          </div>
@@ -337,6 +337,7 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
               <thead class="bg-slate-50 text-slate-600 uppercase text-xs font-bold tracking-wider">
                 <tr>
                   <th class="p-6 border-b border-slate-200">Fecha</th>
+                  <th class="p-6 border-b border-slate-200">Orden</th>
                   <th class="p-6 border-b border-slate-200">Examen</th>
                   <th class="p-6 border-b border-slate-200">Paciente</th>
                   <th class="p-6 border-b border-slate-200">Auditoría</th>
@@ -348,6 +349,11 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                   <tr class="hover:bg-blue-50/30 transition-colors group">
                     <td class="p-6 text-sm font-mono text-slate-500 whitespace-nowrap">
                       {{ formatDate(res.date) }}
+                    </td>
+                    <td class="p-6">
+                       <span class="font-mono text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200">
+                          {{ res.orderNumber || 'S/N' }}
+                       </span>
                     </td>
                     <td class="p-6">
                       <div class="font-bold text-slate-800 text-base">{{ res.testName }}</div>
@@ -632,7 +638,12 @@ export class ResultsComponent {
 
    // --- COMPUTED FOR HISTORY TABLE ---
    sortedResults = computed(() => {
-      return [...this.db.labResults()].reverse();
+      // Sort by created_at desc if available, otherwise fallback to index/reverse
+      return [...this.db.labResults()].sort((a, b) => {
+         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+         return dateB - dateA;
+      });
    });
 
    filteredHistory = computed(() => {
@@ -645,7 +656,8 @@ export class ResultsComponent {
          const patientName = this.getPatientName(res.patientId).toLowerCase();
          const testName = res.testName.toLowerCase();
          const date = res.date.toLowerCase();
-         return patientName.includes(term) || testName.includes(term) || date.includes(term);
+         const order = (res.orderNumber || '').toLowerCase();
+         return patientName.includes(term) || testName.includes(term) || date.includes(term) || order.includes(term);
       });
    });
 
