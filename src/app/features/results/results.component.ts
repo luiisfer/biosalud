@@ -376,22 +376,22 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                     <td class="p-6">
                       <div class="flex gap-2 justify-end">
                          <!-- Edit Button -->
-                         <button (click)="editResult(res)" class="text-amber-600 text-xs font-bold uppercase border border-amber-300 px-4 py-2 hover:bg-amber-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Editar Resultado">
+                         <button (click)="editResult(res)" class="text-amber-600 text-[10px] font-bold uppercase border border-amber-300 px-2 py-1 hover:bg-amber-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-1" title="Editar Resultado">
                              <i class="fas fa-edit"></i> Editar
                          </button>
 
                          <!-- Email Button -->
-                         <button (click)="openEmailModal(res)" class="text-slate-600 text-xs font-bold uppercase border border-slate-300 px-4 py-2 hover:bg-slate-700 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Enviar por Correo">
+                         <button (click)="openEmailModal(res)" class="text-slate-600 text-[10px] font-bold uppercase border border-slate-300 px-2 py-1 hover:bg-slate-700 hover:text-white transition-all rounded shadow-sm flex items-center gap-1" title="Enviar por Correo">
                              <i class="fas fa-envelope"></i> Email
                          </button>
 
                          <!-- View PDF Button -->
-                         <button (click)="generatePdf(res, 'view')" class="text-blue-600 text-xs font-bold uppercase border border-blue-300 px-4 py-2 hover:bg-blue-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Ver Reporte">
+                         <button (click)="generatePdf(res, 'view')" class="text-blue-600 text-[10px] font-bold uppercase border border-blue-300 px-2 py-1 hover:bg-blue-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-1" title="Ver Reporte">
                             <i class="fas fa-eye"></i> Ver
                         </button>
 
                         <!-- Download PDF Button -->
-                        <button (click)="generatePdf(res, 'download')" class="text-red-600 text-xs font-bold uppercase border border-red-300 px-4 py-2 hover:bg-red-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-2" title="Descargar Reporte PDF">
+                        <button (click)="generatePdf(res, 'download')" class="text-red-600 text-[10px] font-bold uppercase border border-red-300 px-2 py-1 hover:bg-red-600 hover:text-white transition-all rounded shadow-sm flex items-center gap-1" title="Descargar Reporte PDF">
                             <i class="fas fa-file-pdf"></i> PDF
                         </button>
                       </div>
