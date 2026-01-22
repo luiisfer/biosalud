@@ -50,8 +50,8 @@ export interface Exam {
   code: string;
   price: number;
   description: string;
-  range: string;
-  unit: string;
+  range?: string;
+  unit?: string;
   profile_id?: string;
   createdBy?: string;
   lastModifiedBy?: string;

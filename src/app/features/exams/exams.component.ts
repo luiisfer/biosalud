@@ -340,8 +340,8 @@ export class ExamsComponent {
     name: ['', Validators.required],
     code: ['', Validators.required],
     price: [null as number | null, [Validators.required, Validators.min(0)]],
-    range: ['', Validators.required],
-    unit: ['', Validators.required],
+    range: [''],
+    unit: [''],
     description: [''],
     profile_id: [null as string | null]
   });
