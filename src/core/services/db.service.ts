@@ -24,7 +24,7 @@ export interface User {
   email: string;
   password?: string;
   name: string;
-  role: 'Admin' | 'Técnico';
+  role: 'Admin' | 'Técnico' | 'Recepcionista';
   lastLogin?: string;
   authId?: string;
 }

@@ -38,6 +38,7 @@ import { DbService, User } from '../../../core/services/db.service';
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Correo Electrónico</label>
               <input formControlName="email" type="email" placeholder="usuario@biosalud.com" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
             </div>
+
             
             <div class="md:col-span-2 flex justify-end gap-3 pt-4 border-t border-slate-100">
                <button type="button" (click)="resetState()" class="px-6 py-3 text-slate-500 hover:text-slate-800 transition-colors">Cancelar</button>
@@ -70,6 +71,7 @@ import { DbService, User } from '../../../core/services/db.service';
                 <td class="p-4">
                   <span class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm border"
                     [class.bg-purple-50]="user.role === 'Admin'" [class.text-purple-600]="user.role === 'Admin'" [class.border-purple-200]="user.role === 'Admin'"
+                    [class.bg-orange-50]="user.role === 'Recepcionista'" [class.text-orange-600]="user.role === 'Recepcionista'" [class.border-orange-200]="user.role === 'Recepcionista'"
                     [class.bg-blue-50]="user.role === 'Técnico'" [class.text-blue-600]="user.role === 'Técnico'" [class.border-blue-200]="user.role === 'Técnico'">
                     {{ user.role }}
                   </span>

@@ -48,6 +48,14 @@ import { LoginComponent } from './app/features/auth/login.component';
                   <i class="fas fa-vial w-5 text-center"></i> Resultados
                 </a>
               </li>
+
+              @if (db.currentUser()?.role === 'Admin' || db.currentUser()?.role === 'Recepcionista') {
+                <li>
+                  <a routerLink="/sales" routerLinkActive="bg-[#34495e] text-[#1abc9c]" class="flex items-center gap-3 px-6 py-4 text-slate-300 hover:bg-[#34495e] hover:text-white transition-colors cursor-pointer border-l-4 border-transparent router-link-active:border-[#1abc9c]">
+                    <i class="fas fa-cash-register w-5 text-center"></i> Ventas
+                  </a>
+                </li>
+              }
               
               <!-- ADMIN ONLY MODULES -->
               @if (db.currentUser()?.role === 'Admin') {
@@ -58,11 +66,8 @@ import { LoginComponent } from './app/features/auth/login.component';
                     <i class="fas fa-users-cog w-5 text-center"></i> Usuarios
                   </a>
                 </li>
-                <li>
-                  <a routerLink="/sales" routerLinkActive="bg-[#34495e] text-[#1abc9c]" class="flex items-center gap-3 px-6 py-4 text-slate-300 hover:bg-[#34495e] hover:text-white transition-colors cursor-pointer border-l-4 border-transparent router-link-active:border-[#1abc9c]">
-                    <i class="fas fa-cash-register w-5 text-center"></i> Ventas
-                  </a>
-                </li>
+
+
                 <li>
                   <a routerLink="/reports" routerLinkActive="bg-[#34495e] text-[#1abc9c]" class="flex items-center gap-3 px-6 py-4 text-slate-300 hover:bg-[#34495e] hover:text-white transition-colors cursor-pointer border-l-4 border-transparent router-link-active:border-[#1abc9c]">
                     <i class="fas fa-chart-pie w-5 text-center"></i> Reportes
