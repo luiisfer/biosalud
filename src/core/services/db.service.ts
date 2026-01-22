@@ -112,7 +112,11 @@ export interface Sale {
   patientId: string;
   patientName: string;
   items: string[];
-  total: number;
+  total: number; // This will now represent the Subtotal (Gross)
+  subtotal?: number;
+  discount?: number;
+  tax?: number;
+  finalTotal?: number;
   method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Seguro';
   createdBy?: string;
 }
