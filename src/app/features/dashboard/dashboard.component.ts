@@ -9,7 +9,10 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   template: `
     <div>
-      <h1 class="text-3xl font-light text-slate-800 mb-8">Panel de Laboratorio</h1>
+      <div class="flex flex-col items-center justify-center mb-8">
+         <img src="/assets/logo_biolab.png" alt="BioSalud Logo" class="h-16 object-contain mb-4">
+         <h1 class="text-3xl font-light text-slate-800">Panel de Laboratorio</h1>
+      </div>
       
       <!-- Flat KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

@@ -14,11 +14,10 @@ import { LoginComponent } from './app/features/auth/login.component';
       <div class="flex h-screen bg-slate-100 font-sans text-slate-700">
         <!-- Sidebar: Flat Dark Blue -->
         <aside class="w-64 bg-[#2c3e50] text-white flex flex-col z-20">
-          <div class="p-6 flex items-center gap-3 bg-[#243342]">
-             <div class="w-8 h-8 bg-[#1abc9c] rounded-sm flex items-center justify-center">
-                <i class="fas fa-flask text-white"></i>
+          <div class="p-6 flex items-center justify-center bg-[#243342]">
+             <div class="bg-white p-2 rounded-lg w-full flex justify-center">
+               <img src="/assets/logo_biolab.png" alt="BioSalud Logo" class="h-12 object-contain">
              </div>
-             <span class="text-xl font-bold tracking-tight">BioSalud</span>
           </div>
 
           <nav class="flex-1 overflow-y-auto py-4">

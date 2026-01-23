@@ -14,9 +14,7 @@ import { DbService } from '../../../core/services/db.service';
       <div class="bg-white p-10 border border-slate-200 w-full max-w-md shadow-sm">
         
         <div class="flex flex-col items-center mb-8">
-           <div class="w-12 h-12 bg-[#1abc9c] rounded-sm flex items-center justify-center mb-4">
-              <i class="fas fa-flask text-white text-xl"></i>
-           </div>
+           <img src="/assets/logo_biolab.png" alt="BioSalud Logo" class="h-20 object-contain mb-4">
            <h1 class="text-2xl font-bold text-slate-700 tracking-tight">BioSalud</h1>
            <p class="text-slate-400 text-sm mt-1">Gestión Inteligente de Laboratorios</p>
         </div>
