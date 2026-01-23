@@ -34,6 +34,10 @@ export interface Methodology {
   name: string;
   description: string;
   createdBy?: string;
+
+  lastModifiedBy?: string;
+  creator?: { name: string };
+  modifier?: { name: string };
 }
 
 export interface Profile {
@@ -42,6 +46,10 @@ export interface Profile {
   description: string;
   methodology_id: string;
   createdBy?: string;
+
+  lastModifiedBy?: string;
+  creator?: { name: string };
+  modifier?: { name: string };
 }
 
 export interface Exam {
@@ -55,6 +63,9 @@ export interface Exam {
   profile_id?: string;
   createdBy?: string;
   lastModifiedBy?: string;
+
+  creator?: { name: string };
+  modifier?: { name: string };
 }
 
 export interface Patient {
@@ -305,21 +316,30 @@ export class DbService {
 
   async fetchMethodologies() {
     try {
-      const { data } = await this.supabase.from('methodologies').select('*').order('name');
+      const { data } = await this.supabase
+        .from('methodologies')
+        .select('*, creator:users!methodologies_created_by_uuid_fkey(name), modifier:users!methodologies_last_modified_by_uuid_fkey(name)')
+        .order('name');
       if (data) this.methodologies.set(data as Methodology[]);
     } catch (e) { }
   }
 
   async fetchProfiles() {
     try {
-      const { data } = await this.supabase.from('profiles').select('*').order('name');
+      const { data } = await this.supabase
+        .from('profiles')
+        .select('*, creator:users!profiles_created_by_uuid_fkey(name), modifier:users!profiles_last_modified_by_uuid_fkey(name)')
+        .order('name');
       if (data) this.profiles.set(data as Profile[]);
     } catch (e) { }
   }
 
   async fetchExams() {
     try {
-      const { data, error } = await this.supabase.from(TBL_EXAMS).select('*').order('name');
+      const { data, error } = await this.supabase
+        .from(TBL_EXAMS)
+        .select('*, creator:users!exams_created_by_uuid_fkey(name), modifier:users!exams_last_modified_by_fkey(name)')
+        .order('name');
       if (data) this.exams.set(data as Exam[]);
     } catch (e) { }
   }
@@ -428,13 +448,15 @@ export class DbService {
   }
 
   async addExam(e: Exam) {
-    const payload = { ...e, createdBy: this.getUserName() };
+    const payload = { ...e, createdBy: this.currentUser()?.id };
     delete (payload as any).id;
+    delete (payload as any).creator;
+    delete (payload as any).modifier;
 
     const { data, error } = await this.supabase
       .from(TBL_EXAMS)
       .insert(payload)
-      .select()
+      .select('*, creator:users!exams_created_by_uuid_fkey(name), modifier:users!exams_last_modified_by_fkey(name)')
       .single();
 
     if (data) {
@@ -443,12 +465,15 @@ export class DbService {
   }
 
   async updateExam(id: string, updated: Partial<Exam>) {
-    const changes = { ...updated, lastModifiedBy: this.getUserName() };
+    const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
+    delete (changes as any).creator;
+    delete (changes as any).modifier;
+
     const { data, error } = await this.supabase
       .from(TBL_EXAMS)
       .update(changes)
       .eq('id', id)
-      .select()
+      .select('*, creator:users!exams_created_by_uuid_fkey(name), modifier:users!exams_last_modified_by_fkey(name)')
       .single();
 
     if (data) {
@@ -464,18 +489,27 @@ export class DbService {
   }
 
   async addMethodology(m: Methodology) {
-    const payload = { ...m, createdBy: this.getUserName() };
+    const payload = { ...m, createdBy: this.currentUser()?.id };
     delete (payload as any).id;
-    const { data } = await this.supabase.from('methodologies').insert(payload).select().single();
+    delete (payload as any).creator;
+    delete (payload as any).modifier;
+    const { data } = await this.supabase.from('methodologies')
+      .insert(payload)
+      .select('*, creator:users!methodologies_created_by_uuid_fkey(name), modifier:users!methodologies_last_modified_by_uuid_fkey(name)')
+      .single();
     if (data) this.methodologies.update(list => [...list, data as Methodology]);
   }
 
   async updateMethodology(id: string, updated: Partial<Methodology>) {
+    const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
+    delete (changes as any).creator;
+    delete (changes as any).modifier;
+
     const { data } = await this.supabase
       .from('methodologies')
-      .update(updated)
+      .update(changes)
       .eq('id', id)
-      .select()
+      .select('*, creator:users!methodologies_created_by_uuid_fkey(name), modifier:users!methodologies_last_modified_by_uuid_fkey(name)')
       .single();
     if (data) {
       this.methodologies.update(list => list.map(m => m.id === id ? (data as Methodology) : m));
@@ -490,18 +524,28 @@ export class DbService {
   }
 
   async addProfile(p: Profile) {
-    const payload = { ...p, createdBy: this.getUserName() };
+    const payload = { ...p, createdBy: this.currentUser()?.id };
     delete (payload as any).id;
-    const { data } = await this.supabase.from('profiles').insert(payload).select().single();
+    delete (payload as any).creator;
+    delete (payload as any).modifier;
+
+    const { data } = await this.supabase.from('profiles')
+      .insert(payload)
+      .select('*, creator:users!profiles_created_by_uuid_fkey(name), modifier:users!profiles_last_modified_by_uuid_fkey(name)')
+      .single();
     if (data) this.profiles.update(list => [...list, data as Profile]);
   }
 
   async updateProfile(id: string, updated: Partial<Profile>) {
+    const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
+    delete (changes as any).creator;
+    delete (changes as any).modifier;
+
     const { data } = await this.supabase
       .from('profiles')
-      .update(updated)
+      .update(changes)
       .eq('id', id)
-      .select()
+      .select('*, creator:users!profiles_created_by_uuid_fkey(name), modifier:users!profiles_last_modified_by_uuid_fkey(name)')
       .single();
     if (data) {
       this.profiles.update(list => list.map(p => p.id === id ? (data as Profile) : p));

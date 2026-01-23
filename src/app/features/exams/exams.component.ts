@@ -206,13 +206,16 @@ import { DbService, Exam } from '../../../core/services/db.service';
                 <th class="p-4 border-b border-slate-200">Perfil / Metodología</th>
                 <th class="p-4 border-b border-slate-200">Rango / Unidad</th>
                 <th class="p-4 border-b border-slate-200">Precio</th>
+                <th class="p-4 border-b border-slate-200">Registro</th>
               } @else if (view() === 'profile') {
                 <th class="p-4 border-b border-slate-200">Nombre del Perfil</th>
                 <th class="p-4 border-b border-slate-200">Metodología</th>
                 <th class="p-4 border-b border-slate-200">Descripción</th>
+                <th class="p-4 border-b border-slate-200">Registro</th>
               } @else {
                 <th class="p-4 border-b border-slate-200">Nombre de la Metodología</th>
                 <th class="p-4 border-b border-slate-200">Descripción</th>
+                <th class="p-4 border-b border-slate-200">Registro</th>
               }
               <th class="p-4 border-b border-slate-200 text-center">Acciones</th>
             </tr>
@@ -244,6 +247,20 @@ import { DbService, Exam } from '../../../core/services/db.service';
                     <span class="block text-[10px] text-slate-400">{{ item.unit }}</span>
                   </td>
                   <td class="p-4 text-slate-700 font-mono font-bold">Q{{ item.price | number:'1.2-2' }}</td>
+                  <td class="p-4 text-slate-500 text-sm">
+                    <div class="flex flex-col gap-1">
+                      <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-user-circle text-slate-300"></i>
+                        {{ item.creator?.name || 'N/A' }}
+                      </span>
+                      @if (item.modifier) {
+                        <span class="inline-flex items-center gap-1 text-xs text-slate-400" title="Última modificación">
+                          <i class="fas fa-pen text-slate-300 text-[10px]"></i>
+                          {{ item.modifier?.name }}
+                        </span>
+                      }
+                    </div>
+                  </td>
                 } @else if (view() === 'profile') {
                   <td class="p-4 font-semibold text-slate-700">{{ item.name }}</td>
                   <td class="p-4">
@@ -252,9 +269,37 @@ import { DbService, Exam } from '../../../core/services/db.service';
                     </span>
                   </td>
                   <td class="p-4 text-slate-500 text-sm">{{ item.description }}</td>
+                  <td class="p-4 text-slate-500 text-sm">
+                    <div class="flex flex-col gap-1">
+                      <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-user-circle text-slate-300"></i>
+                         {{ item.creator?.name || 'N/A' }}
+                      </span>
+                      @if (item.modifier) {
+                        <span class="inline-flex items-center gap-1 text-xs text-slate-400" title="Última modificación">
+                          <i class="fas fa-pen text-slate-300 text-[10px]"></i>
+                          {{ item.modifier?.name }}
+                        </span>
+                      }
+                    </div>
+                  </td>
                 } @else {
                   <td class="p-4 font-semibold text-slate-700">{{ item.name }}</td>
                   <td class="p-4 text-slate-500 text-sm">{{ item.description }}</td>
+                  <td class="p-4 text-slate-500 text-sm">
+                    <div class="flex flex-col gap-1">
+                      <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-user-circle text-slate-300"></i>
+                        {{ item.creator?.name || 'N/A' }}
+                      </span>
+                      @if (item.modifier) {
+                        <span class="inline-flex items-center gap-1 text-xs text-slate-400" title="Última modificación">
+                          <i class="fas fa-pen text-slate-300 text-[10px]"></i>
+                          {{ item.modifier?.name }}
+                        </span>
+                      }
+                    </div>
+                  </td>
                 }
                 
                 <td class="p-4">
