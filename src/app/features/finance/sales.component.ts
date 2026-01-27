@@ -126,6 +126,7 @@ import { DbService, Sale, Exam, Patient, LabResult } from '../../../core/service
                      <th class="p-4">Paciente</th>
                      <th class="p-4">Detalle</th>
                      <th class="p-4">Método</th>
+                     <th class="p-4">Registrado Por</th>
                      <th class="p-4 text-right">Desc.</th>
                      <th class="p-4 text-right">IVA</th>
                      <th class="p-4 text-right">Total</th>
@@ -158,6 +159,11 @@ import { DbService, Sale, Exam, Patient, LabResult } from '../../../core/service
                              {{ sale.method }}
                           </span>
                        </td>
+                       <td class="p-4">
+                          <div class="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+                             <i class="fas fa-user-circle text-slate-300"></i> {{ sale.creator?.name || 'Sistema' }}
+                          </div>
+                      </td>
                        <td class="p-4 text-right font-mono text-xs text-amber-600">
                           @if(sale.discount && sale.discount > 0) {
                              -Q{{ sale.discount | number:'1.2-2' }}
@@ -536,8 +542,7 @@ export class SalesComponent {
          discount: calcs.cardDiscount,
          tax: calcs.iva,
          finalTotal: calcs.finalTotal,
-         method: formVal.method as any,
-         createdBy: 'Admin'
+         method: formVal.method as any
       };
 
       await this.db.addSale(newSale);
@@ -577,8 +582,7 @@ export class SalesComponent {
          discount: calcs.cardDiscount,
          tax: calcs.iva,
          finalTotal: calcs.finalTotal,
-         method: method,
-         createdBy: 'Sistema'
+         method: method
       };
 
       await this.db.addSale(newSale);

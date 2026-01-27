@@ -364,11 +364,11 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                     <td class="p-6">
                         <div class="flex flex-col text-xs text-slate-600 gap-1.5">
                            <div class="flex items-center gap-1.5" title="Creado por">
-                             <i class="fas fa-plus-circle text-green-500"></i> {{ res.createdBy || 'Sistema' }}
+                             <i class="fas fa-plus-circle text-green-500"></i> {{ res.creator?.name || 'Sistema' }}
                            </div>
                            @if(res.lastModifiedBy) {
                              <div class="flex items-center gap-1.5" title="Modificado por">
-                                <i class="fas fa-pen text-blue-500"></i> {{ res.lastModifiedBy }}
+                                <i class="fas fa-pen text-blue-500"></i> {{ res.modifier?.name || 'Sistema' }}
                              </div>
                            }
                         </div>

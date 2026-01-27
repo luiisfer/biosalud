@@ -82,6 +82,8 @@ export interface Patient {
   history: string;
   createdBy?: string;
   lastModifiedBy?: string;
+  creator?: { name: string };
+  modifier?: { name: string };
 }
 
 export interface Doctor {
@@ -115,6 +117,8 @@ export interface LabResult {
   created_at?: string;
   orderNumber?: string;
   price?: number;
+  creator?: { name: string };
+  modifier?: { name: string };
 }
 
 export interface Sale {
@@ -130,6 +134,7 @@ export interface Sale {
   finalTotal?: number;
   method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Seguro';
   createdBy?: string;
+  creator?: { name: string };
 }
 
 @Injectable({
@@ -142,6 +147,7 @@ export class DbService {
   // Connection Status
   connectionStatus = signal<'checking' | 'connected' | 'error'>('checking');
   connectionError = signal<string>('');
+  authInitialized = signal<boolean>(false);
 
   // Auth State
   currentUser = signal<User | null>(null);
@@ -189,6 +195,7 @@ export class DbService {
       if (this.router.url !== '/' && !this.router.url.includes('login')) {
         // Silently allow if on home
       }
+      this.authInitialized.set(true);
       return;
     }
 
@@ -243,6 +250,7 @@ export class DbService {
     // 4. Load Data
     this.testConnection();
     this.loadAllData();
+    this.authInitialized.set(true);
   }
 
   async updateUserLoginTime(docId: string) {
@@ -309,7 +317,10 @@ export class DbService {
 
   async fetchPatients() {
     try {
-      const { data, error } = await this.supabase.from(TBL_PATIENTS).select('*').order('name');
+      const { data, error } = await this.supabase
+        .from(TBL_PATIENTS)
+        .select('*, creator:users!patients_created_by_uuid_fkey(name), modifier:users!patients_last_modified_by_uuid_fkey(name)')
+        .order('name');
       if (data) this.patients.set(data as Patient[]);
     } catch (e) { }
   }
@@ -348,7 +359,7 @@ export class DbService {
     try {
       const { data, error } = await this.supabase
         .from(TBL_RESULTS)
-        .select('*')
+        .select('*, creator:users!lab_results_created_by_uuid_fkey(name), modifier:users!lab_results_last_modified_by_uuid_fkey(name)')
         .order('date', { ascending: false })
         .limit(100);
       if (data) this.labResults.set(data as LabResult[]);
@@ -382,7 +393,7 @@ export class DbService {
     try {
       const { data, error } = await this.supabase
         .from(TBL_SALES)
-        .select('*')
+        .select('*, creator:users!sales_created_by_uuid_fkey(name)')
         .order('date', { ascending: false })
         .limit(100);
       if (data) this.sales.set(data as Sale[]);
@@ -419,13 +430,15 @@ export class DbService {
   // --- ACTIONS ---
 
   async addPatient(p: Patient) {
-    const payload = { ...p, createdBy: this.getUserName() };
-    delete (payload as any).id; // Let Supabase handle ID if serial/uuid
+    const payload = { ...p, createdBy: this.currentUser()?.id };
+    delete (payload as any).id;
+    delete (payload as any).creator;
+    delete (payload as any).modifier;
 
     const { data, error } = await this.supabase
       .from(TBL_PATIENTS)
       .insert(payload)
-      .select()
+      .select('*, creator:users!patients_created_by_uuid_fkey(name), modifier:users!patients_last_modified_by_uuid_fkey(name)')
       .single();
 
     if (data) {
@@ -434,12 +447,15 @@ export class DbService {
   }
 
   async updatePatient(id: string, updated: Partial<Patient>) {
-    const changes = { ...updated, lastModifiedBy: this.getUserName() };
+    const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
+    delete (changes as any).creator;
+    delete (changes as any).modifier;
+
     const { data, error } = await this.supabase
       .from(TBL_PATIENTS)
       .update(changes)
       .eq('id', id)
-      .select()
+      .select('*, creator:users!patients_created_by_uuid_fkey(name), modifier:users!patients_last_modified_by_uuid_fkey(name)')
       .single();
 
     if (data) {
@@ -560,13 +576,15 @@ export class DbService {
   }
 
   async addLabResult(r: LabResult): Promise<boolean> {
-    const payload = { ...r, createdBy: this.getUserName() };
+    const payload = { ...r, createdBy: this.currentUser()?.id };
     delete (payload as any).id;
+    delete (payload as any).creator;
+    delete (payload as any).modifier;
 
     const { data, error } = await this.supabase
       .from(TBL_RESULTS)
       .insert(payload)
-      .select()
+      .select('*, creator:users!lab_results_created_by_uuid_fkey(name), modifier:users!lab_results_last_modified_by_uuid_fkey(name)')
       .single();
 
     if (data) {
@@ -579,12 +597,12 @@ export class DbService {
   }
 
   async updateResult(id: string, interpretation: string) {
-    const changes = { interpretation, status: 'Finalizado' as const, lastModifiedBy: this.getUserName() };
+    const changes = { interpretation, status: 'Finalizado' as const, lastModifiedBy: this.currentUser()?.id };
     const { data, error } = await this.supabase
       .from(TBL_RESULTS)
       .update(changes)
       .eq('id', id)
-      .select()
+      .select('*, creator:users!lab_results_created_by_uuid_fkey(name), modifier:users!lab_results_last_modified_by_uuid_fkey(name)')
       .single();
 
     if (data) {
@@ -619,13 +637,14 @@ export class DbService {
   }
 
   async addSale(s: Sale) {
-    const payload = { ...s, createdBy: this.getUserName() };
+    const payload = { ...s, createdBy: this.currentUser()?.id };
     delete (payload as any).id;
+    delete (payload as any).creator;
 
     const { data, error } = await this.supabase
       .from(TBL_SALES)
       .insert(payload)
-      .select()
+      .select('*, creator:users!sales_created_by_uuid_fkey(name)')
       .single();
 
     if (data) {

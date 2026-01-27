@@ -133,11 +133,11 @@ import { DbService, Patient } from '../../../core/services/db.service';
                 <td class="p-4">
                    <div class="flex flex-col text-[10px] text-slate-500 gap-1">
                       <div class="flex items-center gap-1" title="Creado por">
-                        <i class="fas fa-plus-circle text-green-400"></i> {{ patient.createdBy || 'Sistema' }}
+                        <i class="fas fa-plus-circle text-green-400"></i> {{ patient.creator?.name || 'Sistema' }}
                       </div>
                       @if(patient.lastModifiedBy) {
                         <div class="flex items-center gap-1" title="Modificado por">
-                           <i class="fas fa-pen text-blue-400"></i> {{ patient.lastModifiedBy }}
+                           <i class="fas fa-pen text-blue-400"></i> {{ patient.modifier?.name || 'Sistema' }}
                         </div>
                       }
                    </div>
@@ -249,7 +249,7 @@ import { DbService, Patient } from '../../../core/services/db.service';
                                 
                                 <div class="mt-4 flex justify-between items-center text-xs text-slate-400">
                                    <div>
-                                      Reg. por: {{ result.createdBy || 'Sistema' }}
+                                      Reg. por: {{ result.creator?.name || 'Sistema' }}
                                    </div>
                                    <div>Orden: {{ result.orderNumber || 'S/N' }}</div>
                                 </div>
