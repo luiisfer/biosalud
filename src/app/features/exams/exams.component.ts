@@ -34,6 +34,39 @@ import { DbService, Exam } from '../../../core/services/db.service';
           </div>
         </div>
       }
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" *ngIf="viewingProfileExams()">
+         <div class="bg-white rounded-lg shadow-2xl max-w-lg w-full p-0 border border-slate-200 overflow-hidden">
+            <div class="bg-[#1abc9c] p-4 text-white flex justify-between items-center">
+               <h3 class="font-bold text-lg"><i class="fas fa-layer-group mr-2"></i> {{ viewingProfileExams()?.name }}</h3>
+               <button (click)="closeProfileView()" class="text-white/80 hover:text-white transition-colors">
+                  <i class="fas fa-times text-xl"></i>
+               </button>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+               <div class="mb-4 text-sm text-slate-500 font-medium">Lista de exámenes incluidos en este perfil:</div>
+               <div class="space-y-2">
+                  @for (exam of getExamsForProfile(viewingProfileExams()?.id); track exam.id) {
+                     <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded">
+                        <div>
+                           <div class="font-bold text-slate-700 text-sm">{{ exam.name }}</div>
+                           <div class="text-[10px] text-slate-400 font-mono">{{ exam.code }}</div>
+                        </div>
+                        <div class="font-mono text-xs font-bold text-[#1abc9c]">Q{{ exam.price | number:'1.2-2' }}</div>
+                     </div>
+                  } @empty {
+                     <div class="p-8 text-center text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded">
+                        Este perfil no tiene exámenes asignados actualmente.
+                     </div>
+                  }
+               </div>
+
+               <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-slate-600">
+                  <span class="text-xs font-bold uppercase">Total del Paquete</span>
+                  <span class="text-xl font-bold text-[#1abc9c]">Q{{ viewingProfileExams()?.price | number:'1.2-2' }}</span>
+               </div>
+            </div>
+         </div>
+      </div>
 
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-light text-slate-800">Mantenimiento de Catálogo</h1>
@@ -266,7 +299,11 @@ import { DbService, Exam } from '../../../core/services/db.service';
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (item of paginatedData(); track item.id) {
-              <tr class="hover:bg-slate-50 transition-colors">
+              <tr 
+                (dblclick)="view() === 'profile' ? onProfileDoubleClick(item) : null" 
+                class="hover:bg-slate-50 transition-colors cursor-pointer"
+                [title]="view() === 'profile' ? 'Doble clic para ver exámenes del perfil' : ''"
+              >
                 @if (view() === 'exam') {
                   <td class="p-4 text-slate-400 font-mono text-sm font-bold">{{ item.code }}</td>
                   <td class="p-4">
@@ -413,6 +450,7 @@ export class ExamsComponent {
   showForm = computed(() => this.activeForm() !== 'none');
   editingId = signal<string | null>(null);
   deleteConfirmation = { show: false, id: '' };
+  viewingProfileExams = signal<any | null>(null);
 
   // Search & Pagination State
   searchTerm = signal('');
@@ -628,7 +666,18 @@ export class ExamsComponent {
     return profile ? profile.name : 'N/A';
   }
 
+  getExamsForProfile(profileId: string | undefined): any[] {
+    if (!profileId) return [];
+    return this.db.exams().filter(e => e.profile_id === profileId);
+  }
 
+  onProfileDoubleClick(profile: any) {
+    this.viewingProfileExams.set(profile);
+  }
+
+  closeProfileView() {
+    this.viewingProfileExams.set(null);
+  }
 
   getMethodologyNameRaw(methodologyId: string): string {
     const methodology = this.db.methodologies().find(m => m.id === methodologyId);
