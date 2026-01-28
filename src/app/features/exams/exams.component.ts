@@ -81,23 +81,67 @@ import { DbService, Exam } from '../../../core/services/db.service';
               <button (click)="closeForm()" class="text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
            </div>
            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="md:col-span-2">
-                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Metodología Perteneciente</label>
-                 <select formControlName="methodology_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#1abc9c] outline-none transition-colors text-slate-700">
-                    <option value="">Seleccione una metodología...</option>
-                    @for (m of db.methodologies(); track m.id) {
-                       <option [value]="m.id">{{ m.name }}</option>
-                    }
-                 </select>
-              </div>
+
               <div>
                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nombre del Perfil</label>
                  <input formControlName="name" type="text" placeholder="Ej: Perfil Renal" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#1abc9c] outline-none transition-colors text-slate-700">
               </div>
               <div>
+                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Precio del Perfil (Q)</label>
+                 <input formControlName="price" type="number" placeholder="0.00" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#1abc9c] outline-none transition-colors text-slate-700">
+              </div>
+              <div class="md:col-span-2">
                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Descripción</label>
                  <textarea formControlName="description" rows="1" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#1abc9c] outline-none transition-colors text-slate-700"></textarea>
               </div>
+
+              <!-- Exam Selection Section -->
+              <div class="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
+                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Asignar Exámenes al Perfil</label>
+                 
+                 <!-- Search inside selection -->
+                 <div class="relative mb-2">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                    <input 
+                       [value]="examSelectionSearch()"
+                       (input)="examSelectionSearch.set($any($event.target).value)"
+                       type="text" 
+                       placeholder="Buscar exámenes para añadir..." 
+                       class="w-full pl-8 p-2 text-sm bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#1abc9c] outline-none transition-colors text-slate-700 rounded">
+                 </div>
+
+                 <div class="h-48 overflow-y-auto border border-slate-200 rounded bg-white">
+                    @for (ex of filteredExamsForSelection(); track ex.id) {
+                       <div 
+                          (click)="toggleExam(ex.id)"
+                          class="flex items-center p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors">
+                          <div 
+                             [class.bg-[#1abc9c]]="selectedExams().has(ex.id)"
+                             [class.border-[#1abc9c]]="selectedExams().has(ex.id)"
+                             class="w-4 h-4 border border-slate-300 rounded flex items-center justify-center mr-3 transition-colors bg-white">
+                             @if (selectedExams().has(ex.id)) {
+                                <i class="fas fa-check text-white text-[10px]"></i>
+                             }
+                          </div>
+                          <div class="flex-1">
+                             <div class="text-xs font-bold text-slate-700">{{ ex.name }}</div>
+                             <div class="text-[10px] text-slate-400 font-mono">{{ ex.code }}</div>
+                          </div>
+                          @if (ex.profile_id && ex.profile_id !== editingId()) {
+                             <span class="text-[9px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded ml-2" title="Actualmente en otro perfil">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> {{ getProfileName(ex.profile_id) }}
+                             </span>
+                          }
+                       </div>
+                    } @empty {
+                       <div class="p-4 text-center text-xs text-slate-400">No se encontraron exámenes.</div>
+                    }
+                 </div>
+                 <div class="text-[10px] text-slate-400 mt-1 text-right">
+                    {{ selectedExams().size }} exámenes seleccionados
+                 </div>
+              </div>
+
               <div class="md:col-span-2 flex justify-end">
                  <button type="submit" [disabled]="profileForm.invalid" class="bg-[#1abc9c] text-white px-8 py-3 hover:bg-[#16a085] disabled:opacity-50 font-bold uppercase text-sm tracking-wide">
                     Guardar Perfil
@@ -116,15 +160,7 @@ import { DbService, Exam } from '../../../core/services/db.service';
             <button (click)="closeForm()" class="text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
           </div>
           <form [formGroup]="examForm" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="md:col-span-2">
-               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Perfil al que pertenece (Opcional)</label>
-               <select formControlName="profile_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
-                  <option [value]="null">Examen Independiente</option>
-                  @for (p of db.profiles(); track p.id) {
-                     <option [value]="p.id">{{ p.name }}</option>
-                  }
-               </select>
-            </div>
+
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nombre del Examen</label>
               <input formControlName="name" type="text" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
@@ -146,6 +182,15 @@ import { DbService, Exam } from '../../../core/services/db.service';
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Unidad</label>
                 <input formControlName="unit" type="text" placeholder="Ej: mg/dL" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
               </div>
+            </div>
+            <div class="md:col-span-2">
+               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Metodología (Opcional)</label>
+               <select formControlName="methodology_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
+                  <option [value]="null">Sin Metodología</option>
+                  @for (m of db.methodologies(); track m.id) {
+                     <option [value]="m.id">{{ m.name }}</option>
+                  }
+               </select>
             </div>
             <div class="md:col-span-2">
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Descripción</label>
@@ -209,7 +254,6 @@ import { DbService, Exam } from '../../../core/services/db.service';
                 <th class="p-4 border-b border-slate-200">Registro</th>
               } @else if (view() === 'profile') {
                 <th class="p-4 border-b border-slate-200">Nombre del Perfil</th>
-                <th class="p-4 border-b border-slate-200">Metodología</th>
                 <th class="p-4 border-b border-slate-200">Descripción</th>
                 <th class="p-4 border-b border-slate-200">Registro</th>
               } @else {
@@ -234,12 +278,21 @@ import { DbService, Exam } from '../../../core/services/db.service';
                            <span class="inline-flex items-center gap-1 text-xs font-bold text-[#1abc9c]">
                               {{ getProfileName(item.profile_id) }}
                            </span>
-                           <span class="inline-flex items-center gap-1 text-[10px] text-indigo-400">
-                              {{ getMethodologyName(item.profile_id) }}
-                           </span>
+                           @if (item.methodology_id) {
+                              <span class="inline-flex items-center gap-1 text-[10px] text-indigo-400">
+                                 {{ getMethodologyNameRaw(item.methodology_id) }}
+                              </span>
+                           }
                         </div>
                      } @else {
-                        <span class="text-[10px] text-slate-300 italic">Independiente</span>
+                        <div class="flex flex-col gap-1">
+                           <span class="text-[10px] text-slate-300 italic">Independiente</span>
+                           @if (item.methodology_id) {
+                              <span class="inline-flex items-center gap-1 text-[10px] text-indigo-400">
+                                 {{ getMethodologyNameRaw(item.methodology_id) }}
+                              </span>
+                           }
+                        </div>
                      }
                   </td>
                   <td class="p-4 text-slate-600 text-sm">
@@ -263,11 +316,7 @@ import { DbService, Exam } from '../../../core/services/db.service';
                   </td>
                 } @else if (view() === 'profile') {
                   <td class="p-4 font-semibold text-slate-700">{{ item.name }}</td>
-                  <td class="p-4">
-                    <span class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[10px] font-bold uppercase">
-                      {{ getMethodologyNameRaw(item.methodology_id) }}
-                    </span>
-                  </td>
+
                   <td class="p-4 text-slate-500 text-sm">{{ item.description }}</td>
                   <td class="p-4 text-slate-500 text-sm">
                     <div class="flex flex-col gap-1">
@@ -370,6 +419,18 @@ export class ExamsComponent {
   currentPage = signal(1);
   itemsPerPage = 10;
 
+  // Profile Exam Selection State
+  selectedExams = signal<Set<string>>(new Set());
+  examSelectionSearch = signal('');
+
+  filteredExamsForSelection = computed(() => {
+    const term = this.examSelectionSearch().toLowerCase();
+    return this.db.exams().filter(e =>
+      e.name.toLowerCase().includes(term) ||
+      (e.code && e.code.toLowerCase().includes(term))
+    );
+  });
+
   methodologyForm = this.fb.group({
     name: ['', Validators.required],
     description: ['']
@@ -378,7 +439,7 @@ export class ExamsComponent {
   profileForm = this.fb.group({
     name: ['', Validators.required],
     description: [''],
-    methodology_id: ['', Validators.required]
+    price: [null as number | null, [Validators.min(0)]]
   });
 
   examForm = this.fb.group({
@@ -388,7 +449,8 @@ export class ExamsComponent {
     range: [''],
     unit: [''],
     description: [''],
-    profile_id: [null as string | null]
+
+    methodology_id: [null as string | null]
   });
 
   view = signal<'exam' | 'profile' | 'methodology'>('exam');
@@ -458,6 +520,17 @@ export class ExamsComponent {
     this.examForm.reset();
     this.profileForm.reset();
     this.methodologyForm.reset();
+    this.selectedExams.set(new Set());
+    this.examSelectionSearch.set('');
+  }
+
+  toggleExam(examId: string) {
+    this.selectedExams.update(set => {
+      const newSet = new Set(set);
+      if (newSet.has(examId)) newSet.delete(examId);
+      else newSet.add(examId);
+      return newSet;
+    });
   }
 
   onEdit(item: any) {
@@ -472,15 +545,21 @@ export class ExamsComponent {
         range: item.range,
         unit: item.unit,
         description: item.description,
-        profile_id: item.profile_id || null
+        methodology_id: item.methodology_id || null
       });
       this.activeForm.set('exam');
     } else if (currentView === 'profile') {
       this.profileForm.patchValue({
         name: item.name,
         description: item.description,
-        methodology_id: item.methodology_id
+        price: item.price
       });
+      // Load exams that belong to this profile
+      const examsInProfile = this.db.exams()
+        .filter(e => e.profile_id === item.id)
+        .map(e => e.id);
+      this.selectedExams.set(new Set(examsInProfile));
+
       this.activeForm.set('profile');
     } else if (currentView === 'methodology') {
       this.methodologyForm.patchValue({
@@ -528,11 +607,18 @@ export class ExamsComponent {
 
   async saveProfile() {
     if (this.profileForm.valid) {
+      let savedProfile: any = null;
+
       if (this.editingId()) {
-        await this.db.updateProfile(this.editingId()!, this.profileForm.value as any);
+        savedProfile = await this.db.updateProfile(this.editingId()!, this.profileForm.value as any);
       } else {
-        await this.db.addProfile(this.profileForm.value as any);
+        savedProfile = await this.db.addProfile(this.profileForm.value as any);
       }
+
+      if (savedProfile) {
+        await this.db.assignExamsToProfile(savedProfile.id, Array.from(this.selectedExams()));
+      }
+
       this.closeForm();
     }
   }
@@ -542,12 +628,7 @@ export class ExamsComponent {
     return profile ? profile.name : 'N/A';
   }
 
-  getMethodologyName(profileId: string): string {
-    const profile = this.db.profiles().find(p => p.id === profileId);
-    if (!profile) return 'N/A';
-    const methodology = this.db.methodologies().find(m => m.id === profile.methodology_id);
-    return methodology ? methodology.name : 'N/A';
-  }
+
 
   getMethodologyNameRaw(methodologyId: string): string {
     const methodology = this.db.methodologies().find(m => m.id === methodologyId);

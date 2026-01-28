@@ -33,6 +33,7 @@ export interface Methodology {
   id: string;
   name: string;
   description: string;
+  price?: number;
   createdBy?: string;
 
   lastModifiedBy?: string;
@@ -44,7 +45,7 @@ export interface Profile {
   id: string;
   name: string;
   description: string;
-  methodology_id: string;
+  price?: number;
   createdBy?: string;
 
   lastModifiedBy?: string;
@@ -61,6 +62,7 @@ export interface Exam {
   range?: string;
   unit?: string;
   profile_id?: string;
+  methodology_id?: string;
   createdBy?: string;
   lastModifiedBy?: string;
 
@@ -539,7 +541,7 @@ export class DbService {
     }
   }
 
-  async addProfile(p: Profile) {
+  async addProfile(p: Profile): Promise<Profile | null> {
     const payload = { ...p, createdBy: this.currentUser()?.id };
     delete (payload as any).id;
     delete (payload as any).creator;
@@ -549,10 +551,14 @@ export class DbService {
       .insert(payload)
       .select('*, creator:users!profiles_created_by_uuid_fkey(name), modifier:users!profiles_last_modified_by_uuid_fkey(name)')
       .single();
-    if (data) this.profiles.update(list => [...list, data as Profile]);
+    if (data) {
+      this.profiles.update(list => [...list, data as Profile]);
+      return data as Profile;
+    }
+    return null;
   }
 
-  async updateProfile(id: string, updated: Partial<Profile>) {
+  async updateProfile(id: string, updated: Partial<Profile>): Promise<Profile | null> {
     const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
     delete (changes as any).creator;
     delete (changes as any).modifier;
@@ -565,13 +571,39 @@ export class DbService {
       .single();
     if (data) {
       this.profiles.update(list => list.map(p => p.id === id ? (data as Profile) : p));
+      return data as Profile;
     }
+    return null;
   }
 
   async deleteProfile(id: string) {
     const { error } = await this.supabase.from('profiles').delete().eq('id', id);
     if (!error) {
       this.profiles.update(list => list.filter(p => p.id !== id));
+    }
+  }
+
+  async assignExamsToProfile(profileId: string, examIds: string[]) {
+    try {
+      // 1. Reset all exams that currently belong to this profile
+      await this.supabase
+        .from(TBL_EXAMS)
+        .update({ profile_id: null })
+        .eq('profile_id', profileId);
+
+      if (examIds.length > 0) {
+        // 2. Assign the selected exams to this profile
+        const { error } = await this.supabase
+          .from(TBL_EXAMS)
+          .update({ profile_id: profileId })
+          .in('id', examIds);
+
+        if (error) throw error;
+      }
+
+      await this.fetchExams();
+    } catch (error) {
+      console.error('Error in assignExamsToProfile:', error);
     }
   }
 
@@ -611,7 +643,7 @@ export class DbService {
   }
 
   async updateFullResult(id: string, updated: Partial<LabResult>) {
-    const changes = { ...updated, lastModifiedBy: this.getUserName() };
+    const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
     const { data, error } = await this.supabase
       .from(TBL_RESULTS)
       .update(changes)

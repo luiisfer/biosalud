@@ -993,39 +993,20 @@ export class ResultsComponent {
       this.isProcessing.set(true);
 
       const uniqueTests = [...new Set(this.stagedResults().map(r => r.testName))];
-      let combinedName = uniqueTests.length > 1
-         ? `Panel Integral (${uniqueTests.length} Exámenes)`
-         : (uniqueTests[0] || 'Resultado General');
+      // combinedName will be determined by grouping logic below
+
 
       const exams = this.db.exams();
       const profiles = this.db.profiles();
       const methods = this.db.methodologies();
-      const methodSet = new Set<string>();
-
-      this.stagedResults().forEach(r => {
-         const e = exams.find(ex => ex.name === r.testName);
-         if (e && e.profile_id) {
-            const p = profiles.find(pr => pr.id === e.profile_id);
-            if (p && p.methodology_id) {
-               const m = methods.find(met => met.id === p.methodology_id);
-               if (m) methodSet.add(m.name);
-            }
-         }
-      });
-
-      if (methodSet.size > 0) {
-         combinedName += ` - Metodología: ${Array.from(methodSet).join(', ')}`;
-      }
-
-      let combinedValues = "";
-
-      // Grouping Logic
+      // 1. Sort into buckets for pricing and naming
       const grouped: Record<string, LabResult[]> = {};
       const noProfile: LabResult[] = [];
 
-      // 1. Sort into buckets
       for (const res of this.stagedResults()) {
          const exam = exams.find(e => e.name === res.testName);
+         // Important: Check if ALL exams in the group match the profile to treat it as a profile sale?
+         // For now, if exam has profile_id, we group it.
          if (exam && exam.profile_id) {
             if (!grouped[exam.profile_id]) grouped[exam.profile_id] = [];
             grouped[exam.profile_id].push(res);
@@ -1034,7 +1015,62 @@ export class ResultsComponent {
          }
       }
 
-      // 2. Build String for Profiles
+      // 2. Determine Name and Price
+      let combinedName = "";
+      let totalPrice = 0;
+      const profileIds = Object.keys(grouped);
+
+      if (profileIds.length === 1 && noProfile.length === 0) {
+         // Single Profile Case
+         const pId = profileIds[0];
+         const profile = profiles.find(p => p.id === pId);
+         // Verify if we have ALL exams of the profile? 
+         // Or just assume if it's grouped it's the profile. 
+         // User intention is key. If they selected "Profile", they got all exams.
+         if (profile) {
+            combinedName = profile.name;
+            totalPrice = profile.price || 0;
+         } else {
+            combinedName = uniqueTests[0];
+            totalPrice = this.stagedResults().reduce((sum, r) => sum + (r.price || 0), 0);
+         }
+      } else {
+         // Mixed content or multiple profiles
+         combinedName = uniqueTests.length > 1
+            ? `Panel Integral (${uniqueTests.length} Exámenes)`
+            : (uniqueTests[0] || 'Resultado General');
+
+         // Sum prices: Profiles + Individual Exams
+         profileIds.forEach(pId => {
+            const profile = profiles.find(p => p.id === pId);
+            if (profile && profile.price) {
+               totalPrice += profile.price;
+            } else {
+               // Fallback: sum exams in this group
+               totalPrice += grouped[pId].reduce((sum, r) => sum + (r.price || 0), 0);
+            }
+         });
+
+         totalPrice += noProfile.reduce((sum, r) => sum + (r.price || 0), 0);
+      }
+
+      // 3. Methodology Logic
+      const methodSet = new Set<string>();
+      this.stagedResults().forEach(r => {
+         const e = exams.find(ex => ex.name === r.testName);
+         if (e && e.methodology_id) {
+            const m = methods.find(met => met.id === e.methodology_id);
+            if (m) methodSet.add(m.name);
+         }
+      });
+      if (methodSet.size > 0) {
+         combinedName += ` - Metodología: ${Array.from(methodSet).join(', ')}`;
+      }
+
+      // 4. Build Values String
+      let combinedValues = "";
+
+      // 4a. Build String for Profiles
       for (const [profileId, results] of Object.entries(grouped)) {
          const profile = profiles.find(p => p.id === profileId);
          const pName = profile ? profile.name : 'Perfil';
@@ -1049,11 +1085,11 @@ export class ResultsComponent {
             combinedValues += `► ${res.testName.toUpperCase()}\n`;
             combinedValues += `   Rango Ref: ${rangeStr}\n`;
             combinedValues += `   Unidad:    ${unitStr}\n`;
-            combinedValues += `   Valor:     ${res.values}\n\n`; // Double newline for spacing
+            combinedValues += `   Valor:     ${res.values}\n\n`;
          });
       }
 
-      // 3. Build String for Individual Exams
+      // 4b. Build String for Individual Exams
       if (noProfile.length > 0) {
          if (Object.keys(grouped).length > 0) {
             combinedValues += `■ Exámenes Individuales\n`;
@@ -1071,7 +1107,6 @@ export class ResultsComponent {
          });
       }
 
-      const totalPrice = this.stagedResults().reduce((sum, r) => sum + (r.price || 0), 0);
 
       const newResult: LabResult = {
          id: Math.floor(Math.random() * 100000).toString(),
@@ -1273,23 +1308,17 @@ export class ResultsComponent {
       if (examNames.length > 0) {
          allExams.forEach(e => {
             if (examNames.includes(e.name.toUpperCase())) {
-               if (e.profile_id) {
-                  const p = allProfiles.find(pr => pr.id === e.profile_id);
-                  if (p && p.methodology_id) {
-                     const m = allMethods.find(met => met.id === p.methodology_id);
-                     if (m) methodSet.add(m.name);
-                  }
+               if (e.methodology_id) {
+                  const m = allMethods.find(met => met.id === e.methodology_id);
+                  if (m) methodSet.add(m.name);
                }
             }
          });
       } else {
          const e = allExams.find(x => x.name === res.testName);
-         if (e && e.profile_id) {
-            const p = allProfiles.find(pr => pr.id === e.profile_id);
-            if (p && p.methodology_id) {
-               const m = allMethods.find(met => met.id === p.methodology_id);
-               if (m) methodSet.add(m.name);
-            }
+         if (e && e.methodology_id) {
+            const m = allMethods.find(met => met.id === e.methodology_id);
+            if (m) methodSet.add(m.name);
          }
       }
 

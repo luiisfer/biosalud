@@ -86,7 +86,7 @@ import { DbService, Sale, Exam, Patient, LabResult } from '../../../core/service
                              {{ res.testName }}
                           </td>
                           <td class="p-3 font-mono font-bold text-[#2c3e50] text-sm">
-                             Q{{ (res.price || 0) | number:'1.2-2' }}
+                             Q{{ getPriceForResult(res.testName, res.price) | number:'1.2-2' }}
                           </td>
                           <td class="p-3">
                              <select #methodSelect class="text-xs p-1.5 border border-slate-200 bg-white focus:border-[#f39c12] outline-none rounded-sm">
@@ -227,17 +227,20 @@ import { DbService, Sale, Exam, Patient, LabResult } from '../../../core/service
 
                     <div>
                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Servicios Agregados</label>
-                       <div class="bg-white border border-slate-300 max-h-48 overflow-y-auto p-1">
-                          @for (exam of db.exams(); track exam.id) {
-                             <label class="flex items-center justify-between p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0">
-                                <div class="flex items-center gap-3">
-                                   <input type="checkbox" [value]="exam.id" (change)="toggleExam(exam, $event)" class="w-4 h-4 text-[#3498db] rounded focus:ring-0">
-                                   <div class="text-xs font-bold text-slate-600">{{ exam.name }}</div>
-                                </div>
-                                <div class="font-mono text-xs font-bold text-slate-400 pl-4">Q{{ exam.price }}</div>
-                             </label>
-                          }
-                       </div>
+                        <div class="bg-white border border-slate-300 max-h-48 overflow-y-auto p-1">
+                           @for (item of availableItems(); track item.id) {
+                              <label class="flex items-center justify-between p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0">
+                                 <div class="flex items-center gap-3">
+                                    <input type="checkbox" [value]="item.id" (change)="toggleItem(item, $event)" [checked]="isItemSelected(item.id)" class="w-4 h-4 text-[#3498db] rounded focus:ring-0">
+                                    <div class="flex flex-col">
+                                       <span class="text-xs font-bold text-slate-600">{{ item.name }}</span>
+                                       <span class="text-[9px] text-slate-400 uppercase font-black tracking-tighter">{{ item.type === 'profile' ? 'Perfil' : 'Examen' }}</span>
+                                    </div>
+                                 </div>
+                                 <div class="font-mono text-xs font-bold text-slate-400 pl-4">Q{{ item.price | number:'1.2-2' }}</div>
+                              </label>
+                           }
+                        </div>
                     </div>
 
                     <div>
@@ -391,7 +394,7 @@ export class SalesComponent {
    showModal = signal(false);
    showConfirmModal = signal(false);
 
-   selectedExams = signal<Exam[]>([]);
+   selectedItems = signal<any[]>([]); // { id, name, price, type }
    pendingSaleItem = signal<{ res: LabResult, method: string } | null>(null);
    paymentMethod = signal('Efectivo');
    filterDate = signal<string>(new Date().toISOString().split('T')[0]);
@@ -439,6 +442,13 @@ export class SalesComponent {
       return this.filteredSales().reduce((acc, curr) => acc + (curr.total || 0), 0);
    });
 
+   // Computed: Combined list of Exams and Profiles for selection
+   availableItems = computed(() => {
+      const exams = this.db.exams().map(e => ({ ...e, type: 'exam', price: e.price || 0 }));
+      const profiles = this.db.profiles().map(p => ({ ...p, type: 'profile', price: p.price || 0 }));
+      return [...exams, ...profiles].sort((a, b) => a.name.localeCompare(b.name));
+   });
+
    // Average Ticket
    averageTicket = computed(() => {
       const count = this.filteredSales().length;
@@ -446,12 +456,25 @@ export class SalesComponent {
    });
 
    currentTotal = computed(() => {
-      // If pending sale item exists, use that. Otherwise use selected exams.
+      // If pending sale item exists, use that. Otherwise use selected items.
       if (this.pendingSaleItem()) {
-         return this.pendingSaleItem()!.res.price || 0;
+         const { res } = this.pendingSaleItem()!;
+         return this.getPriceForResult(res.testName, res.price);
       }
-      return this.selectedExams().reduce((acc, ex) => acc + (ex.price || 0), 0);
+      return this.selectedItems().reduce((acc, item) => acc + (item.price || 0), 0);
    });
+
+   getPriceForResult(testName: string, fallbackPrice: number = 0): number {
+      // 1. Check Profiles
+      const profile = this.db.profiles().find(p => p.name === testName);
+      if (profile && profile.price) return profile.price;
+
+      // 2. Check Exams
+      const exam = this.db.exams().find(e => e.name === testName);
+      if (exam && exam.price) return exam.price;
+
+      return fallbackPrice || 0;
+   }
 
    getPatientName(id: string) {
       return this.db.patients().find(p => p.id === id)?.name || 'Paciente Desconocido';
@@ -466,7 +489,7 @@ export class SalesComponent {
    openModal() {
       this.saleForm.reset({ method: 'Efectivo', patientId: '' });
       this.paymentMethod.set('Efectivo');
-      this.selectedExams.set([]);
+      this.selectedItems.set([]);
       this.pendingSaleItem.set(null);
       this.showModal.set(true);
    }
@@ -475,13 +498,17 @@ export class SalesComponent {
       this.showModal.set(false);
    }
 
-   toggleExam(exam: Exam, event: Event) {
+   toggleItem(item: any, event: Event) {
       const checked = (event.target as HTMLInputElement).checked;
       if (checked) {
-         this.selectedExams.update(list => [...list, exam]);
+         this.selectedItems.update(list => [...list, item]);
       } else {
-         this.selectedExams.update(list => list.filter(e => e.id !== exam.id));
+         this.selectedItems.update(list => list.filter(i => i.id !== item.id));
       }
+   }
+
+   isItemSelected(id: string): boolean {
+      return this.selectedItems().some(i => i.id === id);
    }
 
    // --- CALCULATIONS FOR CONFIRMATION ---
@@ -509,7 +536,7 @@ export class SalesComponent {
    });
 
    openConfirmModal() {
-      if (this.saleForm.invalid || this.selectedExams().length === 0) return;
+      if (this.saleForm.invalid || this.selectedItems().length === 0) return;
       this.showConfirmModal.set(true);
    }
 
@@ -523,7 +550,7 @@ export class SalesComponent {
          return;
       }
 
-      if (this.saleForm.invalid || this.selectedExams().length === 0) return;
+      if (this.saleForm.invalid || this.selectedItems().length === 0) return;
 
       const formVal = this.saleForm.value;
       const patient = this.db.patients().find(p => p.id === formVal.patientId);
@@ -536,7 +563,7 @@ export class SalesComponent {
          date: new Date().toISOString(),
          patientId: patient.id,
          patientName: patient.name,
-         items: this.selectedExams().map(e => e.name),
+         items: this.selectedItems().map(e => e.name),
          total: calcs.subtotal,
          subtotal: calcs.subtotal,
          discount: calcs.cardDiscount,
