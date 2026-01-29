@@ -160,11 +160,6 @@ import { DbService, Exam } from '../../../core/services/db.service';
                              <div class="text-xs font-bold text-slate-700">{{ ex.name }}</div>
                              <div class="text-[10px] text-slate-400 font-mono">{{ ex.code }}</div>
                           </div>
-                          @if (ex.profile_id && ex.profile_id !== editingId()) {
-                             <span class="text-[9px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded ml-2" title="Actualmente en otro perfil">
-                                <i class="fas fa-exclamation-triangle mr-1"></i> {{ getProfileName(ex.profile_id) }}
-                             </span>
-                          }
                        </div>
                     } @empty {
                        <div class="p-4 text-center text-xs text-slate-400">No se encontraron exámenes.</div>
@@ -593,9 +588,10 @@ export class ExamsComponent {
         price: item.price
       });
       // Load exams that belong to this profile
-      const examsInProfile = this.db.exams()
-        .filter(e => e.profile_id === item.id)
-        .map(e => e.id);
+      // Old logic: const examsInProfile = this.db.exams().filter(e => e.profile_id === item.id).map(e => e.id);
+
+      // New logic: Use map
+      const examsInProfile = this.db.profileExamsMap()[item.id] || [];
       this.selectedExams.set(new Set(examsInProfile));
 
       this.activeForm.set('profile');
@@ -668,7 +664,8 @@ export class ExamsComponent {
 
   getExamsForProfile(profileId: string | undefined): any[] {
     if (!profileId) return [];
-    return this.db.exams().filter(e => e.profile_id === profileId);
+    const examIds = this.db.profileExamsMap()[profileId] || [];
+    return this.db.exams().filter(e => examIds.includes(e.id));
   }
 
   onProfileDoubleClick(profile: any) {

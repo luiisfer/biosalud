@@ -61,65 +61,77 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
          </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div class="lg:col-span-4 space-y-6">
-
-          <!-- Patient Profile Card (If Selected) -->
-          @if (selectedPatient(); as p) {
-            <div class="bg-white p-0 border border-slate-200 animate-fade-in overflow-hidden shadow-lg sticky top-6">
-               <div class="bg-slate-800 p-5 text-white flex justify-between items-center">
-                 <span class="font-bold text-lg uppercase tracking-wider">Expediente Actual</span>
-                 <div class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
-               </div>
-               <div class="p-8">
-                  <div class="flex items-center gap-6 mb-8">
-                    <div class="w-20 h-20 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-3xl text-[#3498db] shadow-inner">
-                      <i class="fas fa-id-badge"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <h3 class="text-2xl font-black text-slate-800 mb-1 leading-tight uppercase truncate">{{ p.name }}</h3>
-                      <p class="text-slate-500 font-medium flex items-center gap-2">
-                         <i class="fas fa-calendar-alt text-slate-300"></i> {{ p.age }} años • {{ p.gender }}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div class="grid grid-cols-1 gap-4 mb-8">
-                     <div class="p-4 bg-slate-50 border border-slate-100 rounded">
-                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">DPI</div>
-                        <div class="font-mono font-bold text-slate-700 text-base">{{ p.dpi }}</div>
-                     </div>
-                     <div class="p-4 bg-slate-50 border border-slate-100 rounded">
-                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Teléfono</div>
-                        <div class="font-mono font-bold text-slate-700 text-base">{{ p.phone }}</div>
-                     </div>
-                  </div>
-
-                  <div class="text-sm border-t border-slate-100 pt-6 mb-8">
-                     <p class="text-slate-400 text-[10px] uppercase font-bold mb-3 tracking-widest flex items-center gap-2">
-                        <i class="fas fa-file-medical text-slate-300"></i> Notas Clínicas
+      <!-- PATIENT PROFILE (Full Width) -->
+      @if (selectedPatient(); as p) {
+        <div class="mb-10 bg-white p-0 border border-slate-200 animate-fade-in overflow-hidden shadow-lg rounded-sm">
+           <div class="bg-slate-800 p-4 text-white flex justify-between items-center">
+             <span class="font-bold text-lg uppercase tracking-wider">Expediente Actual</span>
+             <div class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
+           </div>
+           
+           <div class="p-8">
+              <!-- Top Row: Avatar + Name + Actions -->
+              <div class="flex flex-col md:flex-row items-start md:items-center gap-8 mb-8 border-b border-slate-100 pb-8">
+                <div class="flex items-center gap-6 flex-1">
+                   <div class="w-20 h-20 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-3xl text-[#3498db] shadow-inner shrink-0">
+                     <i class="fas fa-id-badge"></i>
+                   </div>
+                   <div>
+                     <h3 class="text-3xl font-black text-slate-800 mb-2 leading-tight uppercase">{{ p.name }}</h3>
+                     <p class="text-slate-500 font-medium flex items-center gap-4 text-sm">
+                        <span class="bg-slate-100 px-2 py-1 rounded text-slate-600"><i class="fas fa-calendar-alt text-slate-400 mr-1"></i> {{ p.age }} años</span>
+                        <span class="bg-slate-100 px-2 py-1 rounded text-slate-600"><i class="fas fa-venus-mars text-slate-400 mr-1"></i> {{ p.gender }}</span>
                      </p>
-                     <p class="text-slate-700 italic leading-relaxed text-base">{{ p.history || 'Sin antecedentes registrados.' }}</p>
-                  </div>
-                  
-                  <button (click)="clearSelection()" class="w-full py-4 border-2 border-slate-100 text-slate-400 hover:bg-red-50 hover:border-red-100 hover:text-red-500 transition-all text-xs font-black uppercase tracking-widest flex justify-center items-center gap-3">
-                    <i class="fas fa-sync-alt"></i> Buscar Otro Paciente
-                  </button>
-               </div>
-            </div>
-          } @else {
-             <div class="bg-slate-50 p-12 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center rounded-lg text-slate-400 h-full min-h-[400px]">
-                <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center mb-6 shadow-sm border border-slate-100">
-                   <i class="fas fa-search text-3xl text-slate-200"></i>
+                   </div>
                 </div>
-                <h3 class="font-bold text-slate-600 mb-2 text-lg uppercase tracking-widest">Paso 1</h3>
-                <p class="text-sm leading-relaxed font-medium">Use el buscador superior para seleccionar un paciente y habilitar el registro.</p>
-             </div>
-          }
-        </div>
 
-        <!-- RIGHT COLUMN: Actions (8 cols) -->
-        <div class="lg:col-span-8">
+                <div class="flex gap-3 w-full md:w-auto">
+                   <button (click)="clearSelection()" class="flex-1 md:flex-none px-6 py-3 border-2 border-slate-100 text-slate-400 hover:bg-red-50 hover:border-red-100 hover:text-red-500 transition-all text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 rounded-sm">
+                     <i class="fas fa-sync-alt"></i> Cambiar Paciente
+                   </button>
+                </div>
+              </div>
+              
+              <!-- Info Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                 <div class="p-4 bg-slate-50 border border-slate-100 rounded group hover:bg-blue-50 transition-colors">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest group-hover:text-blue-400">DPI / Identificación</div>
+                    <div class="font-mono font-bold text-slate-700 text-lg">{{ p.dpi }}</div>
+                 </div>
+                 <div class="p-4 bg-slate-50 border border-slate-100 rounded group hover:bg-blue-50 transition-colors">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest group-hover:text-blue-400">Teléfono</div>
+                    <div class="font-mono font-bold text-slate-700 text-lg">{{ p.phone }}</div>
+                 </div>
+                  <div class="p-4 bg-slate-50 border border-slate-100 rounded group hover:bg-blue-50 transition-colors">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest group-hover:text-blue-400">NIT</div>
+                    <div class="font-mono font-bold text-slate-700 text-lg">{{ p.nit || 'C/F' }}</div>
+                 </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="text-sm">
+                 <p class="text-slate-400 text-[10px] uppercase font-bold mb-2 tracking-widest flex items-center gap-2">
+                    <i class="fas fa-file-medical text-slate-300"></i> Notas Clínicas / Antecedentes
+                 </p>
+                 <p class="text-slate-700 italic leading-relaxed text-base bg-yellow-50 p-4 border border-yellow-100 rounded text-justify">{{ p.history || 'Sin antecedentes registrados.' }}</p>
+              </div>
+           </div>
+        </div>
+      } @else {
+         <div class="mb-10 bg-slate-50 p-8 border-2 border-dashed border-slate-200 flex flex-col md:flex-row items-center justify-center text-center md:text-left rounded-lg gap-6 text-slate-400">
+            <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-100 shrink-0">
+               <i class="fas fa-search text-2xl text-slate-200"></i>
+            </div>
+            <div>
+               <h3 class="font-bold text-slate-600 mb-1 text-base uppercase tracking-widest">Paso 1: Selección de Paciente</h3>
+               <p class="text-sm leading-relaxed font-medium">Utilice el buscador en la parte superior para seleccionar un paciente. La información del expediente aparecerá aquí.</p>
+            </div>
+         </div>
+      }
+
+      <div class="grid grid-cols-1 gap-8">
+        <!-- FORM CONTAINER (Full Width) -->
+        <div class="w-full">
           
           @if (selectedPatient()) {
              <!-- FORM: Add New Result -->
@@ -135,61 +147,62 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                 <form [formGroup]="resultForm" (ngSubmit)="addToQueue()" class="space-y-6">
                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       
-                      <!-- REPLACED SELECT WITH SEARCHABLE AUTOCOMPLETE -->
-                      <div class="relative">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Examen Realizado</label>
-                        
-                        <!-- Search Input -->
-                        <div class="relative">
-                           <input 
-                              [formControl]="examSearchControl"
-                              (focus)="showExamDropdown.set(true)"
-                              (input)="updateExamSearch($event)"
-                              (blur)="onExamBlur()"
-                              type="text" 
-                              placeholder="Buscar examen por nombre o código..." 
-                              class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none text-slate-700 transition-colors"
-                              [class.border-red-300]="resultForm.get('examId')?.invalid && resultForm.get('examId')?.touched"
-                           >
-                           @if(selectedExamId()) {
-                             <button type="button" (click)="clearExamSelection()" class="absolute right-3 top-3 text-slate-400 hover:text-red-500">
-                                <i class="fas fa-times"></i>
-                             </button>
-                           } @else {
-                             <i class="fas fa-search absolute right-3 top-3.5 text-slate-300 pointer-events-none"></i>
-                           }
-                        </div>
 
-                        <!-- Dropdown List -->
-                        @if (showExamDropdown() && filteredExamList().length > 0) {
-                           <div class="absolute z-20 w-full mt-1 bg-white border border-slate-200 shadow-lg max-h-60 overflow-y-auto rounded-sm animate-fade-in">
-                              @for (item of filteredExamList(); track item.id) {
-                                 <div (mousedown)="selectExamFromSearch(item)" class="p-3 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors group">
-                                    <div class="flex justify-between items-start">
-                                       <div>
-                                          <span class="font-bold text-slate-700 group-hover:text-[#3498db]">{{ item.name }}</span>
-                                          @if(item.isProfile) {
-                                            <span class="ml-2 px-1.5 py-0.5 bg-purple-50 text-purple-600 text-[9px] font-black rounded border border-purple-100 uppercase tracking-tighter">Perfil</span>
-                                          } @else {
-                                            <span class="ml-2 px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded border border-blue-100 uppercase tracking-tighter">Examen</span>
-                                          }
-                                       </div>
-                                       <span class="text-xs font-mono text-slate-400 bg-slate-100 px-1 rounded">{{ item.code }}</span>
-                                    </div>
-                                    @if(!item.isProfile && item.unit) {
-                                      <div class="text-xs text-slate-500 mt-1">Unidad: {{ item.unit }}</div>
-                                    }
-                                 </div>
-                              }
-                           </div>
-                        }
-                      </div>
+                       <!-- 1. DATE: Moved Up to Avoid Overlap -->
+                       <div class="mb-4">
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Fecha del Análisis</label>
+                          <input type="date" class="w-full p-3 bg-slate-100 border border-slate-200 text-slate-500 cursor-not-allowed" [value]="todayDate" disabled>
+                       </div>
 
-                      
-                      <div>
-                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Fecha del Análisis</label>
-                         <input type="date" class="w-full p-3 bg-slate-100 border border-slate-200 text-slate-500 cursor-not-allowed" [value]="todayDate" disabled>
-                      </div>
+                       <!-- 2. EXAM DROPDOWN: Now below Date -->
+                       <div class="relative">
+                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Examen Realizado</label>
+                         
+                         <!-- Search Input -->
+                         <div class="relative">
+                            <input 
+                               [formControl]="examSearchControl"
+                               (focus)="showExamDropdown.set(true)"
+                               (input)="updateExamSearch($event)"
+                               (blur)="onExamBlur()"
+                               type="text" 
+                               placeholder="Buscar examen por nombre o código..." 
+                               class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none text-slate-700 transition-colors"
+                               [class.border-red-300]="resultForm.get('examId')?.invalid && resultForm.get('examId')?.touched"
+                            >
+                            @if(selectedExamId()) {
+                              <button type="button" (click)="clearExamSelection()" class="absolute right-3 top-3 text-slate-400 hover:text-red-500">
+                                 <i class="fas fa-times"></i>
+                              </button>
+                            } @else {
+                              <i class="fas fa-search absolute right-3 top-3.5 text-slate-300 pointer-events-none"></i>
+                            }
+                         </div>
+
+                         <!-- Dropdown List -->
+                         @if (showExamDropdown() && filteredExamList().length > 0) {
+                            <div class="absolute z-20 w-full mt-1 bg-white border border-slate-200 shadow-lg max-h-60 overflow-y-auto rounded-sm animate-fade-in">
+                               @for (item of filteredExamList(); track item.id) {
+                                  <div (mousedown)="selectExamFromSearch(item)" class="p-3 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors group">
+                                     <div class="flex justify-between items-start">
+                                        <div>
+                                           <span class="font-bold text-slate-700 group-hover:text-[#3498db]">{{ item.name }}</span>
+                                           @if(item.isProfile) {
+                                             <span class="ml-2 px-1.5 py-0.5 bg-purple-50 text-purple-600 text-[9px] font-black rounded border border-purple-100 uppercase tracking-tighter">Perfil</span>
+                                           } @else {
+                                             <span class="ml-2 px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded border border-blue-100 uppercase tracking-tighter">Examen</span>
+                                           }
+                                        </div>
+                                        <span class="text-xs font-mono text-slate-400 bg-slate-100 px-1 rounded">{{ item.code }}</span>
+                                     </div>
+                                     @if(!item.isProfile && item.unit) {
+                                       <div class="text-xs text-slate-500 mt-1">Unidad: {{ item.unit }}</div>
+                                     }
+                                  </div>
+                               }
+                            </div>
+                         }
+                       </div>
                    </div>
 
                    @if (!selectedProfileId()) {
@@ -283,6 +296,15 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                        <div class="bg-white p-4 border border-slate-200 flex justify-between items-start shadow-sm">
                           <div>
                              <div class="font-bold text-slate-700">{{ item.testName }}</div>
+                              @if (item.profileId) {
+                                 @for (p of db.profiles(); track p.id) {
+                                    @if (p.id === item.profileId) {
+                                       <div class="text-[10px] text-purple-500 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                                          <i class="fas fa-layer-group text-[9px]"></i> {{ p.name }}
+                                       </div>
+                                    }
+                                 }
+                              }
                              <div class="text-xs text-slate-500 font-mono mt-1">{{ item.values }}</div>
                           </div>
                           <div class="flex gap-2">
@@ -633,7 +655,8 @@ export class ResultsComponent {
    profileExams = computed(() => {
       const id = this.selectedProfileId();
       if (!id) return [];
-      return this.db.exams().filter(e => e.profile_id === id);
+      const examIds = this.db.profileExamsMap()[id] || [];
+      return this.db.exams().filter(e => examIds.includes(e.id));
    });
 
    // --- COMPUTED FOR HISTORY TABLE ---
@@ -957,7 +980,8 @@ export class ResultsComponent {
             date: this.todayDate,
             values: currentVals[exam.id] || 'Pendiente',
             status: 'Pendiente',
-            price: exam.price
+            price: exam.price,
+            profileId: this.selectedProfileId()! // Store origin profile ID
          }));
          this.stagedResults.update(list => [...list, ...results]);
       } else {
@@ -1004,16 +1028,15 @@ export class ResultsComponent {
       const noProfile: LabResult[] = [];
 
       for (const res of this.stagedResults()) {
-         const exam = exams.find(e => e.name === res.testName);
-         // Important: Check if ALL exams in the group match the profile to treat it as a profile sale?
-         // For now, if exam has profile_id, we group it.
-         if (exam && exam.profile_id) {
-            if (!grouped[exam.profile_id]) grouped[exam.profile_id] = [];
-            grouped[exam.profile_id].push(res);
+         // PRECISE GROUPING: Use the profileId we stored during adding
+         if (res.profileId) {
+            if (!grouped[res.profileId]) grouped[res.profileId] = [];
+            grouped[res.profileId].push(res);
          } else {
             noProfile.push(res);
          }
       }
+
 
       // 2. Determine Name and Price
       let combinedName = "";
@@ -1223,6 +1246,7 @@ export class ResultsComponent {
          alert('Error al generar el documento PDF.');
       }
    }
+   // Removed erroneous brace here
 
    getReportHtml(res: LabResult, mode: 'view' | 'download' | 'email'): string {
       const patient = this.db.patients().find(p => p.id === res.patientId);

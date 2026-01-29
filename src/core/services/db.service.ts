@@ -119,6 +119,7 @@ export interface LabResult {
   created_at?: string;
   orderNumber?: string;
   price?: number;
+  profileId?: string; // Optional: To track origin in UI
   creator?: { name: string };
   modifier?: { name: string };
 }
@@ -166,6 +167,8 @@ export class DbService {
   appointments = signal<Appointment[]>([]);
   labResults = signal<LabResult[]>([]);
   sales = signal<Sale[]>([]);
+  // Map profile_id -> Set of exam_ids
+  profileExamsMap = signal<Record<string, string[]>>({});
 
   // Computed statistics
   totalPatients = computed(() => this.patients().length);
@@ -349,11 +352,30 @@ export class DbService {
 
   async fetchExams() {
     try {
-      const { data, error } = await this.supabase
+      // 1. Fetch exams standard data
+      const { data: examsData, error } = await this.supabase
         .from(TBL_EXAMS)
         .select('*, creator:users!exams_created_by_uuid_fkey(name), modifier:users!exams_last_modified_by_fkey(name)')
         .order('name');
-      if (data) this.exams.set(data as Exam[]);
+
+      if (examsData) {
+        this.exams.set(examsData as Exam[]);
+      }
+
+      // 2. Fetch Profile-Exam Relations
+      const { data: relationData } = await this.supabase
+        .from('profile_exams')
+        .select('profile_id, exam_id');
+
+      if (relationData) {
+        const mapping: Record<string, string[]> = {};
+        relationData.forEach((item: any) => {
+          if (!mapping[item.profile_id]) mapping[item.profile_id] = [];
+          mapping[item.profile_id].push(item.exam_id);
+        });
+        this.profileExamsMap.set(mapping);
+      }
+
     } catch (e) { }
   }
 
@@ -585,22 +607,27 @@ export class DbService {
 
   async assignExamsToProfile(profileId: string, examIds: string[]) {
     try {
-      // 1. Reset all exams that currently belong to this profile
+      // 1. Delete existing relations for this profile
       await this.supabase
-        .from(TBL_EXAMS)
-        .update({ profile_id: null })
+        .from('profile_exams')
+        .delete()
         .eq('profile_id', profileId);
 
       if (examIds.length > 0) {
-        // 2. Assign the selected exams to this profile
+        // 2. Insert new relations
+        const rows = examIds.map(eid => ({
+          profile_id: profileId,
+          exam_id: eid
+        }));
+
         const { error } = await this.supabase
-          .from(TBL_EXAMS)
-          .update({ profile_id: profileId })
-          .in('id', examIds);
+          .from('profile_exams')
+          .insert(rows);
 
         if (error) throw error;
       }
 
+      // 3. Update local state
       await this.fetchExams();
     } catch (error) {
       console.error('Error in assignExamsToProfile:', error);
@@ -612,6 +639,7 @@ export class DbService {
     delete (payload as any).id;
     delete (payload as any).creator;
     delete (payload as any).modifier;
+    delete (payload as any).profileId; // Remove local-only property
 
     const { data, error } = await this.supabase
       .from(TBL_RESULTS)
