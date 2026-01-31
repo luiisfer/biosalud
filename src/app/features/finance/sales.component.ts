@@ -302,7 +302,7 @@ import { DbService, Sale, Exam, Patient, LabResult } from '../../../core/service
 
                   <!-- IVA (12%) -->
                   <div class="flex justify-between items-center text-red-500">
-                     <span class="text-xs font-bold uppercase">IVA (12%)</span>
+                     <span class="text-xs font-bold uppercase">IVA (5%)</span>
                      <span class="font-mono font-bold">-Q{{ calculations().iva | number:'1.2-2' }}</span>
                   </div>
 
@@ -326,57 +326,7 @@ import { DbService, Sale, Exam, Patient, LabResult } from '../../../core/service
          </div>
        }
 
-      <!-- CONFIRMATION MODAL -->
-       @if (showConfirmModal()) {
-         <div class="fixed inset-0 bg-slate-900/90 flex items-center justify-center p-4 z-[60] backdrop-blur-sm animate-fade-in">
-            <div class="bg-white max-w-sm w-full shadow-2xl rounded-sm overflow-hidden flex flex-col">
-               <div class="bg-slate-800 text-white p-5 text-center">
-                  <h3 class="font-bold text-lg uppercase tracking-wider">Confirmar Cobro</h3>
-                  <p class="text-xs text-slate-400 mt-1">Verifique los montos antes de procesar</p>
-               </div>
-               
-               <div class="p-6 space-y-4">
-                  <!-- Subtotal -->
-                  <div class="flex justify-between items-center text-slate-600">
-                     <span class="text-xs font-bold uppercase">Subtotal Venta</span>
-                     <span class="font-mono font-bold">Q{{ calculations().subtotal | number:'1.2-2' }}</span>
-                  </div>
 
-                  <!-- Card Discount (5%) -->
-                  @if (saleForm.get('method')?.value === 'Tarjeta') {
-                     <div class="flex justify-between items-center text-amber-600 bg-amber-50 p-2 rounded border border-amber-100">
-                        <span class="text-xs font-bold uppercase flex items-center gap-1">
-                           <i class="fas fa-credit-card"></i> Desc. Tarjeta (5%)
-                        </span>
-                        <span class="font-mono font-bold">-Q{{ calculations().cardDiscount | number:'1.2-2' }}</span>
-                     </div>
-                  }
-
-                  <!-- IVA (12%) -->
-                  <div class="flex justify-between items-center text-red-500">
-                     <span class="text-xs font-bold uppercase">IVA (12%)</span>
-                     <span class="font-mono font-bold">-Q{{ calculations().iva | number:'1.2-2' }}</span>
-                  </div>
-
-                  <!-- Divider -->
-                  <div class="border-t border-slate-200 border-dashed my-2"></div>
-
-                  <!-- Final Total -->
-                  <div class="flex justify-between items-center bg-slate-50 p-3 rounded border border-slate-200">
-                     <span class="text-sm font-black uppercase text-slate-800">Total Líquido</span>
-                     <span class="font-mono text-xl font-black text-[#27ae60]">Q{{ calculations().finalTotal | number:'1.2-2' }}</span>
-                  </div>
-               </div>
-
-               <div class="p-5 bg-slate-50 border-t border-slate-200 flex gap-3">
-                  <button (click)="showConfirmModal.set(false)" class="flex-1 py-3 text-slate-500 font-bold text-xs uppercase hover:bg-slate-200 rounded-sm transition-colors">Cancelar</button>
-                  <button (click)="submitSale()" class="flex-1 bg-[#27ae60] text-white py-3 font-bold text-xs uppercase hover:bg-[#219150] rounded-sm shadow-md transition-colors flex items-center justify-center gap-2">
-                     <i class="fas fa-check"></i> Confirmar
-                  </button>
-               </div>
-            </div>
-         </div>
-       }
     </div>
   `,
    styles: [`
@@ -522,7 +472,7 @@ export class SalesComponent {
       }
 
       const amountAfterDiscount = subtotal - cardDiscount;
-      const iva = subtotal * 0.12; // User requested 12% on SOLD amount (gross), typically tax is distinct but user said "12% sobre lo vendido"
+      const iva = subtotal * 0.05; // User requested 5%
       // Wait, is 'lo vendido' the original subtotal? Yes.
       // Final total = Subtotal - Discount - Tax? Or is Tax just informational?
       // "se descuenta el 5% ... y tambien el IVA" implies deduction from revenue calculation?
