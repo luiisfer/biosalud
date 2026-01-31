@@ -80,6 +80,9 @@ import { DbService, Exam } from '../../../core/services/db.service';
           <button (click)="openForm('exam')" class="bg-[#3498db] hover:bg-[#2980b9] text-white px-4 py-2 transition-colors flex items-center gap-2 font-medium">
              <i class="fas fa-vial"></i> + Examen
           </button>
+          <button (click)="openForm('indication')" class="bg-[#e67e22] hover:bg-[#d35400] text-white px-4 py-2 transition-colors flex items-center gap-2 font-medium">
+             <i class="fas fa-info-circle"></i> + Indicación
+          </button>
         </div>
       </div>
 
@@ -101,6 +104,30 @@ import { DbService, Exam } from '../../../core/services/db.service';
               <div class="flex justify-end">
                  <button type="submit" [disabled]="methodologyForm.invalid" class="bg-indigo-600 text-white px-8 py-3 hover:bg-indigo-700 disabled:opacity-50 font-bold uppercase text-sm tracking-wide">
                     Guardar Metodología
+                 </button>
+              </div>
+           </form>
+        </div>
+      }
+
+      @if (activeForm() === 'indication') {
+        <div class="bg-white p-8 border border-slate-200 mb-8 animate-fade-in border-l-4 border-[#e67e22]">
+           <div class="flex justify-between items-center mb-6">
+              <h2 class="text-lg font-bold text-slate-700">Nueva Indicación / Preparación</h2>
+              <button (click)="closeForm()" class="text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+           </div>
+           <form [formGroup]="indicationForm" (ngSubmit)="saveIndication()" class="grid grid-cols-1 gap-6">
+              <div>
+                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Título Corto (Ej. Ayuno)</label>
+                 <input formControlName="name" type="text" placeholder="Ej: Ayuno 8 Horas" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#e67e22] outline-none transition-colors text-slate-700">
+              </div>
+              <div>
+                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Descripción Completa</label>
+                 <textarea formControlName="description" rows="3" placeholder="Ej: Se requiere ayuno completo..." class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#e67e22] outline-none transition-colors text-slate-700"></textarea>
+              </div>
+              <div class="flex justify-end">
+                 <button type="submit" [disabled]="indicationForm.invalid" class="bg-[#e67e22] text-white px-8 py-3 hover:bg-[#d35400] disabled:opacity-50 font-bold uppercase text-sm tracking-wide">
+                    Guardar Indicación
                  </button>
               </div>
            </form>
@@ -221,6 +248,15 @@ import { DbService, Exam } from '../../../core/services/db.service';
                </select>
             </div>
             <div class="md:col-span-2">
+               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Indicación / Prep. Paciente (Opcional)</label>
+               <select formControlName="indication_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
+                  <option [value]="null">Sin Indicación</option>
+                  @for (i of db.indications(); track i.id) {
+                     <option [value]="i.id">{{ i.name }}</option>
+                  }
+               </select>
+            </div>
+            <div class="md:col-span-2">
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Descripción</label>
               <textarea formControlName="description" rows="3" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700"></textarea>
             </div>
@@ -254,6 +290,12 @@ import { DbService, Exam } from '../../../core/services/db.service';
               class="px-4 py-1.5 rounded-md text-xs font-bold uppercase transition-all flex items-center gap-2">
               <i class="fas fa-vial"></i> Exámenes
             </button>
+            <button 
+              (click)="view.set('indication')" 
+              [class]="view() === 'indication' ? 'bg-white shadow text-[#e67e22]' : 'text-slate-500 hover:text-slate-700'"
+              class="px-4 py-1.5 rounded-md text-xs font-bold uppercase transition-all flex items-center gap-2">
+              <i class="fas fa-info-circle"></i> Indicaciones
+            </button>
          </div>
 
          <div class="relative flex-1 md:max-w-md">
@@ -261,7 +303,7 @@ import { DbService, Exam } from '../../../core/services/db.service';
             <input 
               (input)="updateSearch($event)" 
               type="text" 
-              [placeholder]="'Buscar ' + (view() === 'exam' ? 'exámenes' : view() === 'profile' ? 'perfiles' : 'metodologías') + '...'" 
+              [placeholder]="'Buscar ' + (view() === 'exam' ? 'exámenes' : view() === 'profile' ? 'perfiles' : view() === 'methodology' ? 'metodologías' : 'indicaciones') + '...'" 
               class="w-full pl-10 p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 rounded-sm">
          </div>
          <div class="text-xs text-slate-500 font-bold uppercase tracking-wider whitespace-nowrap">
@@ -284,8 +326,12 @@ import { DbService, Exam } from '../../../core/services/db.service';
                 <th class="p-4 border-b border-slate-200">Nombre del Perfil</th>
                 <th class="p-4 border-b border-slate-200">Descripción</th>
                 <th class="p-4 border-b border-slate-200">Registro</th>
-              } @else {
+              } @else if (view() === 'methodology') {
                 <th class="p-4 border-b border-slate-200">Nombre de la Metodología</th>
+                <th class="p-4 border-b border-slate-200">Descripción</th>
+                <th class="p-4 border-b border-slate-200">Registro</th>
+              } @else {
+                <th class="p-4 border-b border-slate-200">Indicación</th>
                 <th class="p-4 border-b border-slate-200">Descripción</th>
                 <th class="p-4 border-b border-slate-200">Registro</th>
               }
@@ -315,6 +361,11 @@ import { DbService, Exam } from '../../../core/services/db.service';
                                  {{ getMethodologyNameRaw(item.methodology_id) }}
                               </span>
                            }
+                           @if (item.indication_id) {
+                              <span class="inline-flex items-center gap-1 text-[10px] text-orange-500" title="Indicación">
+                                 <i class="fas fa-info-circle text-[9px]"></i> {{ getIndicationName(item.indication_id) }}
+                              </span>
+                           }
                         </div>
                      } @else {
                         <div class="flex flex-col gap-1">
@@ -322,6 +373,11 @@ import { DbService, Exam } from '../../../core/services/db.service';
                            @if (item.methodology_id) {
                               <span class="inline-flex items-center gap-1 text-[10px] text-indigo-400">
                                  {{ getMethodologyNameRaw(item.methodology_id) }}
+                              </span>
+                           }
+                           @if (item.indication_id) {
+                              <span class="inline-flex items-center gap-1 text-[10px] text-orange-500" title="Indicación">
+                                 <i class="fas fa-info-circle text-[9px]"></i> {{ getIndicationName(item.indication_id) }}
                               </span>
                            }
                         </div>
@@ -441,7 +497,7 @@ import { DbService, Exam } from '../../../core/services/db.service';
 export class ExamsComponent {
   db = inject(DbService);
   private fb: FormBuilder = inject(FormBuilder);
-  activeForm = signal<'none' | 'exam' | 'profile' | 'methodology'>('none');
+  activeForm = signal<'none' | 'exam' | 'profile' | 'methodology' | 'indication'>('none');
   showForm = computed(() => this.activeForm() !== 'none');
   editingId = signal<string | null>(null);
   deleteConfirmation = { show: false, id: '' };
@@ -469,6 +525,11 @@ export class ExamsComponent {
     description: ['']
   });
 
+  indicationForm = this.fb.group({
+    name: ['', Validators.required],
+    description: ['']
+  });
+
   profileForm = this.fb.group({
     name: ['', Validators.required],
     description: [''],
@@ -483,10 +544,11 @@ export class ExamsComponent {
     unit: [''],
     description: [''],
 
-    methodology_id: [null as string | null]
+    methodology_id: [null as string | null],
+    indication_id: [null as string | null]
   });
 
-  view = signal<'exam' | 'profile' | 'methodology'>('exam');
+  view = signal<'exam' | 'profile' | 'methodology' | 'indication'>('exam');
 
   // Computed Filtered List
   filteredData = computed(() => {
@@ -497,6 +559,7 @@ export class ExamsComponent {
     if (currentView === 'exam') list = this.db.exams();
     else if (currentView === 'profile') list = this.db.profiles();
     else if (currentView === 'methodology') list = this.db.methodologies();
+    else if (currentView === 'indication') list = this.db.indications();
 
     if (!term) return list;
 
@@ -538,7 +601,7 @@ export class ExamsComponent {
   }
   // --------------------------
 
-  openForm(type: 'exam' | 'profile' | 'methodology') {
+  openForm(type: 'exam' | 'profile' | 'methodology' | 'indication') {
     this.activeForm.set(type);
     this.editingId.set(null);
   }
@@ -553,6 +616,7 @@ export class ExamsComponent {
     this.examForm.reset();
     this.profileForm.reset();
     this.methodologyForm.reset();
+    this.indicationForm.reset();
     this.selectedExams.set(new Set());
     this.examSelectionSearch.set('');
   }
@@ -578,7 +642,8 @@ export class ExamsComponent {
         range: item.range,
         unit: item.unit,
         description: item.description,
-        methodology_id: item.methodology_id || null
+        methodology_id: item.methodology_id || null,
+        indication_id: item.indication_id || null
       });
       this.activeForm.set('exam');
     } else if (currentView === 'profile') {
@@ -601,6 +666,12 @@ export class ExamsComponent {
         description: item.description
       });
       this.activeForm.set('methodology');
+    } else if (currentView === 'indication') {
+      this.indicationForm.patchValue({
+        name: item.name,
+        description: item.description
+      });
+      this.activeForm.set('indication');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -620,6 +691,7 @@ export class ExamsComponent {
     if (currentView === 'exam') await this.db.deleteExam(id);
     else if (currentView === 'profile') await this.db.deleteProfile(id);
     else if (currentView === 'methodology') await this.db.deleteMethodology(id);
+    else if (currentView === 'indication') await this.db.deleteIndication(id);
 
     this.cancelDelete();
   }
@@ -634,6 +706,17 @@ export class ExamsComponent {
         await this.db.updateMethodology(this.editingId()!, this.methodologyForm.value as any);
       } else {
         await this.db.addMethodology(this.methodologyForm.value as any);
+      }
+      this.closeForm();
+    }
+  }
+
+  async saveIndication() {
+    if (this.indicationForm.valid) {
+      if (this.editingId()) {
+        await this.db.updateIndication(this.editingId()!, this.indicationForm.value as any);
+      } else {
+        await this.db.addIndication(this.indicationForm.value as any);
       }
       this.closeForm();
     }
@@ -679,6 +762,11 @@ export class ExamsComponent {
   getMethodologyNameRaw(methodologyId: string): string {
     const methodology = this.db.methodologies().find(m => m.id === methodologyId);
     return methodology ? methodology.name : 'N/A';
+  }
+
+  getIndicationName(id: string): string {
+    const item = this.db.indications().find(i => i.id === id);
+    return item ? item.name : 'N/A';
   }
 
   async onSubmit() {

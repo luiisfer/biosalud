@@ -53,6 +53,16 @@ export interface Profile {
   modifier?: { name: string };
 }
 
+export interface Indication {
+  id: string;
+  name: string;
+  description: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  creator?: { name: string };
+  modifier?: { name: string };
+}
+
 export interface Exam {
   id: string;
   name: string;
@@ -63,6 +73,7 @@ export interface Exam {
   unit?: string;
   profile_id?: string;
   methodology_id?: string;
+  indication_id?: string;
   createdBy?: string;
   lastModifiedBy?: string;
 
@@ -160,6 +171,7 @@ export class DbService {
   // Data Signals
   users = signal<User[]>([]);
   methodologies = signal<Methodology[]>([]);
+  indications = signal<Indication[]>([]);
   profiles = signal<Profile[]>([]);
   exams = signal<Exam[]>([]);
   patients = signal<Patient[]>([]);
@@ -310,6 +322,7 @@ export class DbService {
 
     this.fetchPatients();
     this.fetchMethodologies();
+    this.fetchIndications();
     this.fetchProfiles();
     this.fetchExams();
     this.fetchResults();
@@ -338,6 +351,19 @@ export class DbService {
         .order('name');
       if (data) this.methodologies.set(data as Methodology[]);
     } catch (e) { }
+  }
+
+  async fetchIndications() {
+    try {
+      const { data, error } = await this.supabase
+        .from('indications')
+        .select('*, creator:users!indications_created_by_fkey(name), modifier:users!indications_last_modified_by_fkey(name)')
+        .order('name');
+      if (error) console.error('Error fetching indications:', error);
+      if (data) this.indications.set(data as Indication[]);
+    } catch (e) {
+      console.error('Exception fetching indications:', e);
+    }
   }
 
   async fetchProfiles() {
@@ -499,6 +525,7 @@ export class DbService {
       .select('*, creator:users!exams_created_by_uuid_fkey(name), modifier:users!exams_last_modified_by_fkey(name)')
       .single();
 
+    if (error) console.error('Error adding exam:', error);
     if (data) {
       this.exams.update(list => [...list, data as Exam]);
     }
@@ -516,6 +543,7 @@ export class DbService {
       .select('*, creator:users!exams_created_by_uuid_fkey(name), modifier:users!exams_last_modified_by_fkey(name)')
       .single();
 
+    if (error) console.error('Error updating exam:', error);
     if (data) {
       this.exams.update(list => list.map(e => e.id === id ? (data as Exam) : e));
     }
@@ -560,6 +588,45 @@ export class DbService {
     const { error } = await this.supabase.from('methodologies').delete().eq('id', id);
     if (!error) {
       this.methodologies.update(list => list.filter(m => m.id !== id));
+    }
+  }
+
+  async addIndication(i: Indication) {
+    const payload = { ...i, createdBy: this.currentUser()?.id };
+    delete (payload as any).id;
+    delete (payload as any).creator;
+    delete (payload as any).modifier;
+    const { data, error } = await this.supabase.from('indications')
+      .insert(payload)
+      .select('*, creator:users!indications_created_by_fkey(name), modifier:users!indications_last_modified_by_fkey(name)')
+      .single();
+
+    if (error) console.error('Error adding indication:', error);
+    if (data) this.indications.update(list => [...list, data as Indication]);
+  }
+
+  async updateIndication(id: string, updated: Partial<Indication>) {
+    const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
+    delete (changes as any).creator;
+    delete (changes as any).modifier;
+
+    const { data, error } = await this.supabase
+      .from('indications')
+      .update(changes)
+      .eq('id', id)
+      .select('*, creator:users!indications_created_by_fkey(name), modifier:users!indications_last_modified_by_fkey(name)')
+      .single();
+
+    if (error) console.error('Error updating indication:', error);
+    if (data) {
+      this.indications.update(list => list.map(i => i.id === id ? (data as Indication) : i));
+    }
+  }
+
+  async deleteIndication(id: string) {
+    const { error } = await this.supabase.from('indications').delete().eq('id', id);
+    if (!error) {
+      this.indications.update(list => list.filter(i => i.id !== id));
     }
   }
 
