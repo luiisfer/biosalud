@@ -586,6 +586,22 @@ export class ResultsComponent {
    profileValues = signal<Record<string, string>>({});
    orderNumber = signal('');
 
+   constructor() {
+      this.initializeOrderNumber();
+   }
+
+   async initializeOrderNumber() {
+      const count = await this.db.getMonthlyOrderCount();
+      const today = new Date();
+
+      const seq = (count + 1).toString().padStart(2, '0');
+      const day = today.getDate().toString().padStart(2, '0');
+      const month = (today.getMonth() + 1).toString().padStart(2, '0');
+      const year = today.getFullYear().toString().slice(-2);
+
+      this.orderNumber.set(`${seq}${day}${month}${year}`);
+   }
+
    // Right Column State (History Table)
    historySearchTerm = signal('');
    historyPage = signal(1);

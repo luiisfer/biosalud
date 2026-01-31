@@ -924,19 +924,34 @@ export class DbService {
       .slice(0, 5); // Top 5
   }
 
+
+
   getMonthlyExamCount() {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    // Count exams across all finalized results in the current month
-    // Note: one LabResult might contain multiple staged exams, but 
-    // usually we count how many procedures/reports were issued.
-    // If we want individual tests, we'd need to parse the values field.
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     return this.labResults().filter(r => {
       const d = new Date(r.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d >= startOfMonth;
     }).length;
+  }
+
+
+
+  async getMonthlyOrderCount(): Promise<number> {
+    const date = new Date();
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1).toISOString();
+
+    const { data, error } = await this.supabase
+      .from('lab_results')
+      .select('orderNumber')
+      .gte('created_at', startOfMonth);
+
+    if (error) console.error('Error fetching monthly order count:', error);
+    if (!data) return 0;
+
+    // Count unique order numbers
+    const uniqueOrders = new Set(data.map(r => r.orderNumber).filter(n => n));
+    return uniqueOrders.size;
   }
 
   getMedicalReferrals() {
