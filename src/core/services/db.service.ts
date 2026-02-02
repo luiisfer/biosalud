@@ -17,6 +17,7 @@ const TBL_DOCTORS = 'doctors';
 const TBL_APPOINTMENTS = 'appointments';
 const TBL_USERS = 'users';
 const TBL_SALES = 'sales';
+const TBL_QUOTES = 'quotes';
 const TBL_SETTINGS = 'settings';
 
 export interface User {
@@ -151,6 +152,17 @@ export interface Sale {
   creator?: { name: string };
 }
 
+export interface Quote {
+  id?: number;
+  created_at?: string;
+  client_name: string;
+  client_phone?: string;
+  items: any[];
+  total: number;
+  created_by?: string;
+  creator?: { name: string };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -179,6 +191,7 @@ export class DbService {
   appointments = signal<Appointment[]>([]);
   labResults = signal<LabResult[]>([]);
   sales = signal<Sale[]>([]);
+  quotes = signal<Quote[]>([]);
   // Map profile_id -> Set of exam_ids
   profileExamsMap = signal<Record<string, string[]>>({});
 
@@ -329,7 +342,9 @@ export class DbService {
     this.fetchDoctors();
     this.fetchAppointments();
     this.fetchUsers();
+    this.fetchUsers();
     this.fetchSales();
+    this.fetchQuotes();
     this.fetchSettings();
   }
 
@@ -449,6 +464,20 @@ export class DbService {
       if (data) this.sales.set(data as Sale[]);
     } catch (e) {
       console.warn("No se pudo cargar la colección de ventas.");
+    }
+  }
+
+
+  async fetchQuotes() {
+    try {
+      const { data } = await this.supabase
+        .from(TBL_QUOTES)
+        .select('*, creator:users!quotes_created_by_fkey(name)')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (data) this.quotes.set(data as Quote[]);
+    } catch (e) {
+      console.warn("No se pudo cargar las cotizaciones.");
     }
   }
 
@@ -778,6 +807,27 @@ export class DbService {
       this.sales.update(list => [data as Sale, ...list]);
     } else if (error) {
       console.error("Error creando venta en Supabase:", error.message);
+    }
+  }
+
+  async addQuote(q: Quote): Promise<Quote | null> {
+    const payload = { ...q, created_by: this.currentUser()?.id };
+    delete (payload as any).id;
+    delete (payload as any).created_at;
+    delete (payload as any).creator;
+
+    const { data, error } = await this.supabase
+      .from(TBL_QUOTES)
+      .insert(payload)
+      .select('*, creator:users!quotes_created_by_fkey(name)')
+      .single();
+
+    if (data) {
+      this.quotes.update(list => [data as Quote, ...list]);
+      return data as Quote;
+    } else {
+      console.error("Error creating quote:", error?.message);
+      return null;
     }
   }
 

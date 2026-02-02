@@ -47,6 +47,11 @@ import { LoginComponent } from './app/features/auth/login.component';
                   <i class="fas fa-vial w-5 text-center"></i> Resultados
                 </a>
               </li>
+              <li>
+                <a routerLink="/quotes" routerLinkActive="bg-[#34495e] text-[#1abc9c]" class="flex items-center gap-3 px-6 py-4 text-slate-300 hover:bg-[#34495e] hover:text-white transition-colors cursor-pointer border-l-4 border-transparent router-link-active:border-[#1abc9c]">
+                  <i class="fas fa-file-invoice-dollar w-5 text-center"></i> Cotizaciones
+                </a>
+              </li>
 
               @if (db.currentUser()?.role === 'Admin' || db.currentUser()?.role === 'Recepcionista') {
                 <li>

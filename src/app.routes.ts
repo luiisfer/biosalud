@@ -9,6 +9,7 @@ import { ExamsComponent } from './app/features/exams/exams.component';
 import { SalesComponent } from './app/features/finance/sales.component';
 import { SettingsComponent } from './app/features/settings/settings.component';
 import { UsersComponent } from './app/features/admin/users.component';
+import { QuotesComponent } from './app/features/quotes/quotes.component';
 import { LoginComponent } from './app/features/auth/login.component';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'patients', component: PatientsComponent, canActivate: [authGuard] },
   { path: 'exams', component: ExamsComponent, canActivate: [authGuard] },
+  { path: 'quotes', component: QuotesComponent, canActivate: [authGuard] },
   { path: 'agenda', component: AgendaComponent, canActivate: [authGuard] },
   { path: 'results', component: ResultsComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
