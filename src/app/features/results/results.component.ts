@@ -1435,7 +1435,7 @@ export class ResultsComponent {
                 <p style="font-size: 11px; margin: 2px 0;">Manzana G, Casa 24 Residenciales Valle del Quetzal Km. 28 zona 0,</p>
                 <p style="font-size: 11px; margin: 2px 0;">San Juan Sacatepéquez, Guatemala</p>
                 <p style="font-size: 11px; font-weight: 500; margin: 2px 0;">TEL: 4240-7376 | e-mail: biosalud.lcb@gmail.com</p>
-                <p style="font-size: 13px; font-weight: bold; margin-top: 5px;">Licda. Yenifer Soto - Química Bióloga (Col. 6,808)</p>
+                <p style="font-size: 13px; font-weight: bold; margin-top: 5px;">Licda. Yénnifer Soto - Química Bióloga (Col. 6,808)</p>
              </div>
           </div>
 
@@ -1475,7 +1475,7 @@ export class ResultsComponent {
 
               <div class="signature-section">
                  <div class="signature-line">${signatureHtml}</div>
-                 <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yenifer Soto</p>
+                 <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yénnifer Soto</p>
                  <p style="font-size: 10px; color: #64748b; margin: 0;">Química Bióloga, Col. 6,808</p>
               </div>
            </div>
