@@ -781,14 +781,34 @@ export class DbService {
   }
 
   async addAppointment(a: Appointment) {
+    const payload = { ...a };
+    delete (payload as any).id;
+
     const { data, error } = await this.supabase
       .from(TBL_APPOINTMENTS)
-      .insert(a)
+      .insert(payload)
       .select()
       .single();
 
     if (data) {
       this.appointments.update(list => [...list, data as Appointment]);
+    } else if (error) {
+      console.error("Error creating appointment:", error.message);
+    }
+  }
+
+  async updateAppointmentStatus(id: string, status: string) {
+    const { data, error } = await this.supabase
+      .from(TBL_APPOINTMENTS)
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (data) {
+      this.appointments.update(list => list.map(a => a.id === id ? (data as Appointment) : a));
+    } else if (error) {
+      console.error("Error updating appointment status:", error.message);
     }
   }
 
