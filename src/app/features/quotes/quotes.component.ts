@@ -287,7 +287,13 @@ export class QuotesComponent {
       const quoteData: Quote = {
         client_name: name,
         client_phone: phone,
-        items: items.map(i => ({ name: i.name, price: i.price, type: i.type, id: i.id })),
+        items: items.map(i => ({
+          name: i.name,
+          price: i.price,
+          type: i.type,
+          id: i.id,
+          indication_id: i.indication_id
+        })),
         total: total
       };
 
@@ -304,6 +310,24 @@ export class QuotesComponent {
       items.forEach(item => {
         message += `• ${item.name} ........ Q${item.price.toFixed(2)}\n`;
       });
+
+      // Add Indications
+      const uniqueIndications = new Set<string>();
+      items.forEach(item => {
+        if (item.type === 'exam' && item.indication_id) {
+          const indication = this.db.indications().find(ind => ind.id === item.indication_id);
+          if (indication && indication.description) {
+            uniqueIndications.add(indication.description);
+          }
+        }
+      });
+
+      if (uniqueIndications.size > 0) {
+        message += `\n*Indicaciones:*\n`;
+        uniqueIndications.forEach(ind => {
+          message += `• ${ind}\n`;
+        });
+      }
 
       message += `\n*Total: Q${total.toFixed(2)}*\n\n`;
       message += `📞 WhatsApp: 42407376\n`;
@@ -332,10 +356,27 @@ export class QuotesComponent {
     message += `*Detalle de Servicios:*\n`;
 
     if (Array.isArray(quote.items)) {
+      const uniqueIndications = new Set<string>();
+
       quote.items.forEach((item: any) => {
         const price = typeof item.price === 'number' ? item.price : 0;
         message += `• ${item.name} ........ Q${price.toFixed(2)}\n`;
+
+        // Collect indications
+        if (item.type === 'exam' && item.indication_id) {
+          const indication = this.db.indications().find(ind => ind.id === item.indication_id);
+          if (indication && indication.description) {
+            uniqueIndications.add(indication.description);
+          }
+        }
       });
+
+      if (uniqueIndications.size > 0) {
+        message += `\n*Indicaciones:*\n`;
+        uniqueIndications.forEach(ind => {
+          message += `• ${ind}\n`;
+        });
+      }
     }
 
     message += `\n*Total: Q${quote.total.toFixed(2)}*\n\n`;
