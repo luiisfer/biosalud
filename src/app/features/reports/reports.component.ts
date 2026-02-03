@@ -37,10 +37,7 @@ type ReportType = 'financial' | 'operational' | 'medical';
              <button (click)="setPreset('month')" class="px-2 py-1 text-xs font-medium text-slate-500 hover:text-[#3498db] hover:bg-slate-50 rounded transition-colors" title="Este Mes">Mes</button>
           </div>
 
-          <button (click)="exportReport()" 
-            class="ml-auto md:ml-2 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-2">
-            <i class="fas fa-file-excel"></i> <span class="hidden sm:inline">Exportar</span>
-          </button>
+
         </div>
       </div>
 
