@@ -71,6 +71,8 @@ export interface Exam {
   price: number;
   description: string;
   range?: string;
+  range_male?: string;
+  range_female?: string;
   unit?: string;
   profile_id?: string;
   methodology_id?: string;

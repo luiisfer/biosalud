@@ -217,7 +217,7 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                                <i class="fas fa-info-circle mt-0.5"></i>
                                <div>
                                   <div class="font-bold text-xs uppercase tracking-wide opacity-80">Referencia</div>
-                                  <div>Rango esperado: <span class="font-mono font-bold">{{ exam.range }}</span></div>
+                                  <div>Rango esperado: <span class="font-mono font-bold">{{ getRangeForPatient(exam) }}</span></div>
                                   @if(exam.unit) { <div class="text-xs">Unidad: {{ exam.unit }}</div> }
                                   @if(exam.description) { <div class="text-xs mt-1 italic text-blue-600">{{ exam.description }}</div> }
                                </div>
@@ -242,7 +242,7 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                                   </label>
                                   <input 
                                      type="text" 
-                                     [placeholder]="ex.range ? 'Ref: ' + ex.range : 'Ingrese Valor'"
+                                     [placeholder]="getRangeForPatient(ex) ? 'Ref: ' + getRangeForPatient(ex) : 'Ingrese Valor'"
                                      (input)="updateProfileValue(ex.id, $event)"
                                      class="w-full p-2 bg-slate-50 border border-slate-100 focus:bg-white focus:border-purple-400 outline-none text-sm font-mono text-slate-700 transition-all">
                                </div>
@@ -793,6 +793,20 @@ export class ResultsComponent {
       this.stagedResults.set([]); // Clear stage when changing patient
    }
 
+   getRangeForPatient(exam: Exam | any): string {
+      const patient = this.selectedPatient();
+      if (!patient || !exam) return exam?.range || '';
+
+      // Normalize gender check (assuming 'Masculino'/'Femenino' are the values)
+      if (patient.gender === 'Masculino' && exam.range_male) {
+         return exam.range_male;
+      }
+      if (patient.gender === 'Femenino' && exam.range_female) {
+         return exam.range_female;
+      }
+      return exam.range || '';
+   }
+
    resetForm() {
       this.resultForm.reset();
       this.selectedExamId.set('');
@@ -1118,7 +1132,7 @@ export class ResultsComponent {
 
          results.forEach(res => {
             const examDef = exams.find(e => e.name === res.testName);
-            const rangeStr = (examDef?.range) || '';
+            const rangeStr = this.getRangeForPatient(examDef);
             const unitStr = (examDef?.unit) || '';
 
             combinedValues += `► ${res.testName.toUpperCase()}\n`;
@@ -1136,7 +1150,7 @@ export class ResultsComponent {
 
          noProfile.forEach(res => {
             const examDef = exams.find(e => e.name === res.testName);
-            const rangeStr = (examDef?.range) || '';
+            const rangeStr = this.getRangeForPatient(examDef);
             const unitStr = (examDef?.unit) || '';
 
             combinedValues += `► ${res.testName.toUpperCase()}\n`;

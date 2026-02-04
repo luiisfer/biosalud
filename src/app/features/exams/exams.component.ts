@@ -230,13 +230,24 @@ import { DbService, Exam } from '../../../core/services/db.service';
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Rango Referencia</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Rango General</label>
                 <input formControlName="range" type="text" placeholder="Ej: 70-100" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Unidad</label>
                 <input formControlName="unit" type="text" placeholder="Ej: mg/dL" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
               </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-100 rounded">
+               <div class="col-span-2 text-xs font-bold text-[#3498db] uppercase tracking-wider mb-1">Rangos Específicos (Opcional)</div>
+               <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hombres <i class="fas fa-mars text-blue-400"></i></label>
+                  <input formControlName="range_male" type="text" placeholder="Ej: 80-120" class="w-full p-2 bg-white border border-slate-200 focus:border-[#3498db] outline-none transition-colors text-slate-700 text-sm">
+               </div>
+               <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mujeres <i class="fas fa-venus text-pink-400"></i></label>
+                  <input formControlName="range_female" type="text" placeholder="Ej: 60-100" class="w-full p-2 bg-white border border-slate-200 focus:border-[#3498db] outline-none transition-colors text-slate-700 text-sm">
+               </div>
             </div>
             <div class="md:col-span-2">
                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Metodología (Opcional)</label>
@@ -541,6 +552,8 @@ export class ExamsComponent {
     code: ['', Validators.required],
     price: [null as number | null, [Validators.required, Validators.min(0)]],
     range: [''],
+    range_male: [''],
+    range_female: [''],
     unit: [''],
     description: [''],
 
@@ -640,6 +653,8 @@ export class ExamsComponent {
         code: item.code,
         price: item.price,
         range: item.range,
+        range_male: item.range_male,
+        range_female: item.range_female,
         unit: item.unit,
         description: item.description,
         methodology_id: item.methodology_id || null,
