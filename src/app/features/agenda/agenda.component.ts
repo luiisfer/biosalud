@@ -55,7 +55,7 @@ import { DbService, Appointment } from '../../../core/services/db.service';
                    <span class="text-2xl font-light">{{ getDay(appt.date) }}</span>
                 </div>
                 <div>
-                  <h3 class="font-bold text-slate-800 text-lg group-hover:text-[#3498db] transition-colors">{{ getPatientName(appt.patientId) }}</h3>
+                  <h3 class="font-bold text-slate-800 text-lg group-hover:text-[#3498db] transition-colors">{{ getPatientName(appt) }}</h3>
                   <div class="text-sm text-slate-500 flex items-center gap-3 mt-1">
                      <span class="flex items-center gap-1"><i class="far fa-clock"></i> {{ appt.time }}</span>
                      <span class="text-slate-300">|</span>
@@ -94,14 +94,28 @@ import { DbService, Appointment } from '../../../core/services/db.service';
             </div>
             
             <div class="p-6 space-y-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Paciente</label>
-                <select [(ngModel)]="newAppointment.patientId" class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:border-[#3498db]">
-                  <option value="" disabled selected>Seleccione un paciente</option>
-                  @for (patient of db.patients(); track patient.id) {
-                    <option [value]="patient.id">{{ patient.name }} - {{ patient.dpi }}</option>
-                  }
-                </select>
+              <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-xs font-bold text-slate-500 uppercase">Paciente</label>
+                  <label class="flex items-center gap-2 text-xs cursor-pointer text-slate-600">
+                    <input type="checkbox" [(ngModel)]="isExternalPatient" class="rounded text-[#3498db] focus:ring-[#3498db]">
+                    <span>Paciente Externo / Nuevo</span>
+                  </label>
+                </div>
+
+                @if (!isExternalPatient) {
+                  <select [(ngModel)]="newAppointment.patientId" (ngModelChange)="newAppointment.patientName = ''" 
+                    class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:border-[#3498db]">
+                    <option value="" disabled selected>Seleccione un paciente</option>
+                    @for (patient of db.patients(); track patient.id) {
+                      <option [value]="patient.id">{{ patient.name }} - {{ patient.dpi }}</option>
+                    }
+                  </select>
+                } @else {
+                  <input type="text" [(ngModel)]="newAppointment.patientName" (ngModelChange)="newAppointment.patientId = ''"
+                    placeholder="Nombre completo del paciente"
+                    class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:border-[#3498db]">
+                }
               </div>
 
               <div class="grid grid-cols-2 gap-4">
@@ -143,6 +157,7 @@ export class AgendaComponent {
   db = inject(DbService);
   selectedDate = signal(new Date());
   showModal = signal(false);
+  isExternalPatient = false; // Toggle state
 
   newAppointment: Partial<Appointment> = {
     patientId: '',
@@ -174,9 +189,13 @@ export class AgendaComponent {
     return this.db.appointments().filter(a => a.date === dateStr);
   });
 
-  getPatientName(id: string): string {
-    const p = this.db.patients().find(pt => pt.id === id);
-    return p ? p.name : 'Paciente Desconocido';
+  getPatientName(appt: Appointment): string {
+    if (appt.patientName) return appt.patientName;
+    if (appt.patientId) {
+      const p = this.db.patients().find(pt => pt.id === appt.patientId);
+      return p ? p.name : 'Paciente Desconocido';
+    }
+    return 'Sin Nombre';
   }
 
   getMonthShort(dateStr: string): string {
@@ -225,11 +244,13 @@ export class AgendaComponent {
   openModal() {
     this.newAppointment = {
       patientId: '',
+      patientName: '',
       date: this.selectedDate().toISOString().split('T')[0],
       time: '08:00',
       type: 'Toma de Muestra',
       status: 'Programado'
     };
+    this.isExternalPatient = false;
     this.showModal.set(true);
   }
 
@@ -238,7 +259,11 @@ export class AgendaComponent {
   }
 
   isValidAppointment() {
-    return this.newAppointment.patientId && this.newAppointment.date && this.newAppointment.time;
+    const hasPatient = this.isExternalPatient
+      ? !!this.newAppointment.patientName?.trim()
+      : !!this.newAppointment.patientId;
+
+    return hasPatient && this.newAppointment.date && this.newAppointment.time;
   }
 
   saveAppointment() {
@@ -254,6 +279,17 @@ export class AgendaComponent {
         type: this.newAppointment.type || 'Consulta General', // Default if not set
         status: 'Programado'
       };
+
+      // Ensure we don't send empty strings if they are optional
+      if (!appt.patientId) delete appt.patientId;
+      if (!appt.patientName) delete appt.patientName;
+      if (this.isExternalPatient) {
+        appt.patientName = this.newAppointment.patientName;
+        delete appt.patientId;
+      } else {
+        appt.patientId = this.newAppointment.patientId;
+        delete appt.patientName; // Clear name if linked to ID
+      }
 
       this.db.addAppointment(appt);
       this.closeModal();

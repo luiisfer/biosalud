@@ -637,7 +637,7 @@ export class ResultsComponent {
       if (!term) return [];
       return this.db.patients().filter(p =>
          p.name.toLowerCase().includes(term) ||
-         p.dpi.includes(term)
+         (p.dpi || '').includes(term)
       );
    });
 

@@ -1,6 +1,6 @@
 
 import { Component, inject } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { DbService } from './core/services/db.service';
 import { LoginComponent } from './app/features/auth/login.component';
@@ -137,4 +137,17 @@ import { LoginComponent } from './app/features/auth/login.component';
 })
 export class AppComponent {
   db = inject(DbService);
+  private router = inject(Router);
+
+  constructor() {
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        // Refresh data when navigating to a new route (module)
+        // We only refresh if the user is logged in
+        if (this.db.currentUser()) {
+          this.db.loadAllData();
+        }
+      }
+    });
+  }
 }

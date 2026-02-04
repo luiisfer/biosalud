@@ -85,7 +85,7 @@ export interface Exam {
 export interface Patient {
   id: string;
   name: string;
-  dpi: string;
+  dpi?: string;
   nit?: string;
   birthDate?: string;
   doctor?: string;
@@ -111,7 +111,8 @@ export interface Doctor {
 
 export interface Appointment {
   id: string;
-  patientId: string;
+  patientId?: string;
+  patientName?: string;
   date: string;
   time: string;
   status: 'Programado' | 'Completado' | 'Cancelado' | 'Resultados Listos';

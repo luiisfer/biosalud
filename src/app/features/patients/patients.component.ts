@@ -300,7 +300,7 @@ export class PatientsComponent {
 
     return this.db.patients().filter(p =>
       p.name.toLowerCase().includes(term) ||
-      p.dpi.includes(term) ||
+      (p.dpi || '').includes(term) ||
       p.id.includes(term)
     );
   });
@@ -328,7 +328,7 @@ export class PatientsComponent {
 
   patientForm = this.fb.group({
     name: ['', Validators.required],
-    dpi: ['', Validators.required],
+    dpi: [''],
     nit: [''],
     birthDate: ['', Validators.required],
     gender: ['Masculino', Validators.required],
