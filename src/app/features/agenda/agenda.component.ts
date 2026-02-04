@@ -87,7 +87,7 @@ import { DbService, Appointment } from '../../../core/services/db.service';
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 class="font-bold text-slate-800">Nueva Cita</h3>
+              <h3 class="font-bold text-slate-800">{{ editingAppointmentId() ? 'Editar Cita' : 'Nueva Cita' }}</h3>
               <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600">
                 <i class="fas fa-times"></i>
               </button>
@@ -150,8 +150,34 @@ import { DbService, Appointment } from '../../../core/services/db.service';
           </div>
         </div>
       }
+
+      <!-- Delete Confirmation Modal -->
+      @if (showDeleteModal()) {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
+           <div class="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden border border-red-100">
+              <div class="bg-red-50 p-6 flex flex-col items-center text-center">
+                 <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-trash-alt text-red-500 text-xl"></i>
+                 </div>
+                 <h3 class="text-lg font-bold text-slate-800 mb-2">¿Eliminar Cita?</h3>
+                 <p class="text-sm text-slate-500">Esta acción eliminará la cita permanentemente. ¿Está seguro que desea continuar?</p>
+              </div>
+              <div class="flex border-t border-slate-100">
+                 <button (click)="closeDeleteModal()" class="flex-1 py-3 text-slate-600 font-medium hover:bg-slate-50 transition-colors text-sm">Cancelar</button>
+                 <button (click)="confirmDelete()" class="flex-1 py-3 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm">Sí, Eliminar</button>
+              </div>
+           </div>
+        </div>
+      }
     </div>
-  `
+  `,
+  styles: [`
+     @keyframes fadeIn {
+       from { opacity: 0; transform: scale(0.98); }
+       to { opacity: 1; transform: scale(1); }
+     }
+     .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+  `]
 })
 export class AgendaComponent {
   db = inject(DbService);
@@ -232,14 +258,48 @@ export class AgendaComponent {
   }
 
   editAppointment(id: string) {
-    alert(`Editar cita ${id} - Funcionalidad en desarrollo`);
+    const appt = this.db.appointments().find(a => a.id === id);
+    if (!appt) return;
+
+    this.editingAppointmentId.set(id);
+    this.newAppointment = {
+      patientId: appt.patientId || '',
+      patientName: appt.patientName || '',
+      date: appt.date,
+      time: appt.time,
+      type: appt.type,
+      status: appt.status
+    };
+
+    // Determine external state based on presence of patientId
+    this.isExternalPatient = !appt.patientId;
+
+    this.showModal.set(true);
   }
 
   cancelAppointment(id: string) {
-    if (confirm('¿Está seguro de que desea cancelar esta cita?')) {
-      this.db.updateAppointmentStatus(id, 'Cancelado');
+    this.appointmentToDeleteId.set(id);
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal.set(false);
+    this.appointmentToDeleteId.set(null);
+  }
+
+  confirmDelete() {
+    const id = this.appointmentToDeleteId();
+    if (id) {
+      this.db.deleteAppointment(id);
+      this.closeDeleteModal();
     }
   }
+
+  editingAppointmentId = signal<string | null>(null);
+
+  // Delete Modal State
+  showDeleteModal = signal(false);
+  appointmentToDeleteId = signal<string | null>(null);
 
   openModal() {
     this.newAppointment = {
@@ -251,11 +311,13 @@ export class AgendaComponent {
       status: 'Programado'
     };
     this.isExternalPatient = false;
+    this.editingAppointmentId.set(null);
     this.showModal.set(true);
   }
 
   closeModal() {
     this.showModal.set(false);
+    this.editingAppointmentId.set(null);
   }
 
   isValidAppointment() {
@@ -268,31 +330,35 @@ export class AgendaComponent {
 
   saveAppointment() {
     if (this.isValidAppointment()) {
-      // Cast to any to delete optional/missing properties if needed or strict compliance
-      // We'll create a full object. ID is expected by interface but usually handled by DB.
-      // We'll let DbService handle the ID issue or provided a temp one.
       const appt: Appointment = {
-        id: '', // Will be ignored/managed by DB service
+        id: '',
         patientId: this.newAppointment.patientId!,
         date: this.newAppointment.date!,
         time: this.newAppointment.time!,
-        type: this.newAppointment.type || 'Consulta General', // Default if not set
+        type: this.newAppointment.type || 'Consulta General',
         status: 'Programado'
       };
 
       // Ensure we don't send empty strings if they are optional
       if (!appt.patientId) delete appt.patientId;
       if (!appt.patientName) delete appt.patientName;
+
       if (this.isExternalPatient) {
         appt.patientName = this.newAppointment.patientName;
         delete appt.patientId;
       } else {
         appt.patientId = this.newAppointment.patientId;
-        delete appt.patientName; // Clear name if linked to ID
+        delete appt.patientName;
       }
 
-      this.db.addAppointment(appt);
+      if (this.editingAppointmentId()) {
+        this.db.updateAppointment(this.editingAppointmentId()!, appt);
+      } else {
+        this.db.addAppointment(appt);
+      }
+
       this.closeModal();
+
       // Optionally update selected date to the appointment date so user sees it
       const [y, m, d] = appt.date.split('-').map(Number);
       this.selectedDate.set(new Date(y, m - 1, d));

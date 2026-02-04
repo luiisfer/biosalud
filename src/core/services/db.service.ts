@@ -813,6 +813,37 @@ export class DbService {
     }
   }
 
+  async updateAppointment(id: string, appt: Partial<Appointment>) {
+    const payload = { ...appt };
+    delete (payload as any).id; // don't update ID
+
+    const { data, error } = await this.supabase
+      .from(TBL_APPOINTMENTS)
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (data) {
+      this.appointments.update(list => list.map(a => a.id === id ? (data as Appointment) : a));
+    } else if (error) {
+      console.error("Error updating appointment:", error.message);
+    }
+  }
+
+  async deleteAppointment(id: string) {
+    const { error } = await this.supabase
+      .from(TBL_APPOINTMENTS)
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      this.appointments.update(list => list.filter(a => a.id !== id));
+    } else {
+      console.error("Error deleting appointment:", error.message);
+    }
+  }
+
   async addSale(s: Sale) {
     const payload = { ...s, createdBy: this.currentUser()?.id };
     delete (payload as any).id;
@@ -849,6 +880,19 @@ export class DbService {
     } else {
       console.error("Error creating quote:", error?.message);
       return null;
+    }
+  }
+
+  async deleteQuote(id: number) {
+    const { error } = await this.supabase
+      .from(TBL_QUOTES)
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      this.quotes.update(list => list.filter(q => q.id !== id));
+    } else {
+      console.error("Error deleting quote:", error.message);
     }
   }
 

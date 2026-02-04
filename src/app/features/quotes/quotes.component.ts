@@ -152,9 +152,14 @@ import { DbService, Exam, Profile, Quote } from '../../../core/services/db.servi
                   <td class="p-3 font-medium">{{ quote.client_name }}</td>
                   <td class="p-3 text-right font-mono font-bold text-slate-700">Q{{ quote.total | number:'1.2-2' }}</td>
                   <td class="p-3 text-center">
-                    <button (click)="viewQuoteHistory(quote)" class="text-[#3498db] hover:text-[#2980b9] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 mx-auto">
+                   <div class="flex items-center justify-center"> <!-- Added flex container -->
+                    <button (click)="viewQuoteHistory(quote)" class="text-[#3498db] hover:text-[#2980b9] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1">
                       <i class="fas fa-eye"></i> Ver
                     </button>
+                    <button (click)="deleteQuote(quote)" class="text-slate-300 hover:text-red-500 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 ml-4" title="Eliminar">
+                       <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
                   </td>
                 </tr>
               }
@@ -203,6 +208,25 @@ import { DbService, Exam, Profile, Quote } from '../../../core/services/db.servi
            </div>
         </div>
       }
+      
+      <!-- DELETE CONFIRMATION MODAL -->
+      @if (showDeleteModal()) {
+        <div class="fixed inset-0 bg-slate-900/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fade-in">
+           <div class="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden border border-red-100">
+              <div class="bg-red-50 p-6 flex flex-col items-center text-center">
+                 <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-trash-alt text-red-500 text-xl"></i>
+                 </div>
+                 <h3 class="text-lg font-bold text-slate-800 mb-2">¿Eliminar Cotización?</h3>
+                 <p class="text-sm text-slate-500">Esta acción no se puede deshacer. ¿Desea continuar?</p>
+              </div>
+              <div class="flex border-t border-slate-100">
+                 <button (click)="closeDeleteModal()" class="flex-1 py-3 text-slate-600 font-medium hover:bg-slate-50 transition-colors text-sm">Cancelar</button>
+                 <button (click)="confirmDeleteQuote()" class="flex-1 py-3 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm">Eliminar</button>
+              </div>
+           </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -231,6 +255,10 @@ export class QuotesComponent {
   generatedMessage = signal('');
   isGenerating = signal(false);
   viewingQuoteId = signal<number | null>(null);
+
+  // Delete Modal State
+  showDeleteModal = signal(false);
+  quoteToDeleteId = signal<number | null>(null);
 
   availableItems = computed(() => {
     const exams = this.db.exams().map(e => ({ ...e, type: 'exam', price: e.price || 0, uniqueId: 'exam-' + e.id }));
@@ -292,6 +320,7 @@ export class QuotesComponent {
           price: i.price,
           type: i.type,
           id: i.id,
+          description: i.description,
           indication_id: i.indication_id
         })),
         total: total
@@ -299,43 +328,9 @@ export class QuotesComponent {
 
       const savedQuote = await this.db.addQuote(quoteData);
 
-      // Generate message
-      const date = new Date().toLocaleDateString('es-GT');
-      let message = `*Laboratorio BioSalud*\n`;
-      message += `*Cotización${savedQuote?.id ? ' #' + savedQuote.id : ''}*\n`;
-      message += `*Fecha:* ${date}\n`;
-      message += `*Cliente:* ${name}\n\n`;
-      message += `*Detalle de Servicios:*\n`;
-
-      items.forEach(item => {
-        message += `• ${item.name} ........ Q${item.price.toFixed(2)}\n`;
-      });
-
-      // Add Indications
-      const uniqueIndications = new Set<string>();
-      items.forEach(item => {
-        if (item.type === 'exam' && item.indication_id) {
-          const indication = this.db.indications().find(ind => ind.id === item.indication_id);
-          if (indication && indication.description) {
-            uniqueIndications.add(indication.description);
-          }
-        }
-      });
-
-      if (uniqueIndications.size > 0) {
-        message += `\n*Indicaciones:*\n`;
-        uniqueIndications.forEach(ind => {
-          message += `• ${ind}\n`;
-        });
-      }
-
-      message += `\n*Total: Q${total.toFixed(2)}*\n\n`;
-      message += `📞 WhatsApp: 42407376\n`;
-
-      this.generatedMessage.set(message);
+      this.generatedMessage.set(this.buildQuoteText(quoteData));
       this.showModal.set(true);
 
-      // Optional: Reset form or keep it for tweaks? Usually keeping it is better in case they want to fix a typo.
     } catch (e) {
       console.error("Error generating quote:", e);
       alert("Hubo un error al guardar la cotización. Intente de nuevo.");
@@ -344,45 +339,68 @@ export class QuotesComponent {
     }
   }
 
+  private buildQuoteText(quote: any): string {
+    let message = `📄 COTIZACIÓN DE EXÁMENES DE LABORATORIO\n\n`;
+    message += `🧪 Examen:\n\n`;
+
+    // Items
+    const items = quote.items || [];
+    items.forEach((item: any) => {
+      message += `${item.name} ……………………… Q. ${item.price.toFixed(2)}\n`;
+    });
+
+    message += `\nSubtotal: Q. ${quote.total.toFixed(2)}\n`;
+    message += `💰 Total a pagar: Q. ${quote.total.toFixed(2)}\n\n`;
+
+    // Conditions / Indications
+    const uniqueIndications = new Set<string>();
+    items.forEach((item: any) => {
+      if (item.type === 'exam' && item.indication_id) {
+        const indication = this.db.indications().find(ind => ind.id === item.indication_id);
+        if (indication && indication.description) {
+          uniqueIndications.add(indication.description);
+        }
+      }
+    });
+
+    message += `📝 Condiciones del paciente:\n\n`;
+    if (uniqueIndications.size > 0) {
+      uniqueIndications.forEach(ind => {
+        // Clean up bullets if they exist in DB to match strict format or just append
+        // User example has raw text lines.
+        message += `${ind}\n\n`;
+      });
+    } else {
+      message += `No requiere condiciones especiales.\n\n`;
+    }
+
+    // Descriptions
+    items.forEach((item: any) => {
+      if (item.description) {
+        message += `🧪 ${item.description}\n\n`;
+      }
+    });
+
+    // Payment Methods
+    message += `💳 Formas de pago:\n\n`;
+    message += `Efectivo\nTransferencia\nTarjeta\n\n`;
+
+    // Location
+    message += `📍 Atención con previa cita\n`;
+    message += `Dirección: Residenciales Los Volcanes, G24, Sector Tacaná, Ciudad Quetzal, San Juan Sacatepéquez.\n\n`;
+
+    // Footer
+    message += `💙 Laboratorio Clínico BioSalud`;
+
+    return message;
+  }
+
   viewQuoteHistory(quote: Quote) {
     this.viewingQuoteId.set(quote.id || null);
 
     // Reconstruct message
-    const date = new Date(quote.created_at || new Date()).toLocaleDateString('es-GT');
-    let message = `*Laboratorio BioSalud*\n`;
-    message += `*Cotización #${quote.id}*\n`;
-    message += `*Fecha:* ${date}\n`;
-    message += `*Cliente:* ${quote.client_name}\n\n`;
-    message += `*Detalle de Servicios:*\n`;
-
-    if (Array.isArray(quote.items)) {
-      const uniqueIndications = new Set<string>();
-
-      quote.items.forEach((item: any) => {
-        const price = typeof item.price === 'number' ? item.price : 0;
-        message += `• ${item.name} ........ Q${price.toFixed(2)}\n`;
-
-        // Collect indications
-        if (item.type === 'exam' && item.indication_id) {
-          const indication = this.db.indications().find(ind => ind.id === item.indication_id);
-          if (indication && indication.description) {
-            uniqueIndications.add(indication.description);
-          }
-        }
-      });
-
-      if (uniqueIndications.size > 0) {
-        message += `\n*Indicaciones:*\n`;
-        uniqueIndications.forEach(ind => {
-          message += `• ${ind}\n`;
-        });
-      }
-    }
-
-    message += `\n*Total: Q${quote.total.toFixed(2)}*\n\n`;
-    message += `📞 WhatsApp: 42407376\n`;
-
-    this.generatedMessage.set(message);
+    this.viewingQuoteId.set(quote.id || null);
+    this.generatedMessage.set(this.buildQuoteText(quote));
     this.showModal.set(true);
   }
 
@@ -398,6 +416,26 @@ export class QuotesComponent {
       // I'll assume the user knows it copied if they clicked it.
     } catch (err) {
       console.error('Failed to copy', err);
+    }
+  }
+
+  deleteQuote(quote: Quote) {
+    if (quote.id) {
+      this.quoteToDeleteId.set(quote.id);
+      this.showDeleteModal.set(true);
+    }
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal.set(false);
+    this.quoteToDeleteId.set(null);
+  }
+
+  confirmDeleteQuote() {
+    const id = this.quoteToDeleteId();
+    if (id) {
+      this.db.deleteQuote(id);
+      this.closeDeleteModal();
     }
   }
 }
