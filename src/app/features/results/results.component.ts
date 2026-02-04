@@ -1118,8 +1118,8 @@ export class ResultsComponent {
 
          results.forEach(res => {
             const examDef = exams.find(e => e.name === res.testName);
-            const rangeStr = examDef ? examDef.range : 'No especificado';
-            const unitStr = examDef ? examDef.unit : '';
+            const rangeStr = (examDef?.range) || '';
+            const unitStr = (examDef?.unit) || '';
 
             combinedValues += `► ${res.testName.toUpperCase()}\n`;
             combinedValues += `   Rango Ref: ${rangeStr}\n`;
@@ -1136,8 +1136,8 @@ export class ResultsComponent {
 
          noProfile.forEach(res => {
             const examDef = exams.find(e => e.name === res.testName);
-            const rangeStr = examDef ? examDef.range : 'No especificado';
-            const unitStr = examDef ? examDef.unit : '';
+            const rangeStr = (examDef?.range) || '';
+            const unitStr = (examDef?.unit) || '';
 
             combinedValues += `► ${res.testName.toUpperCase()}\n`;
             combinedValues += `   Rango Ref: ${rangeStr}\n`;
