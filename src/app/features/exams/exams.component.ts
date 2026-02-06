@@ -224,6 +224,13 @@ import { DbService, Exam } from '../../../core/services/db.service';
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Código Interno</label>
               <input formControlName="code" type="text" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
             </div>
+            <div class="md:col-span-2 bg-slate-50 p-3 rounded border border-slate-200 flex items-center gap-3">
+               <input formControlName="is_parameter" type="checkbox" id="is_parameter" class="w-5 h-5 text-[#3498db] rounded border-slate-300 focus:ring-[#3498db]">
+               <div>
+                  <label for="is_parameter" class="block text-sm font-bold text-slate-700 cursor-pointer select-none">Es un Parámetro / Componente</label>
+                  <p class="text-xs text-slate-400">Marcar si este ítem es parte de un perfil (ej. "Color" en Orina) y no un examen cobrable por sí solo.</p>
+               </div>
+            </div>
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Precio (Q)</label>
               <input formControlName="price" type="number" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
@@ -359,7 +366,12 @@ import { DbService, Exam } from '../../../core/services/db.service';
                 @if (view() === 'exam') {
                   <td class="p-4 text-slate-400 font-mono text-sm font-bold">{{ item.code }}</td>
                   <td class="p-4">
-                    <div class="font-semibold text-slate-700">{{ item.name }}</div>
+                    <div class="flex items-center gap-2">
+                       <span class="font-semibold text-slate-700">{{ item.name }}</span>
+                       @if(item.is_parameter) {
+                          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 text-slate-500 border border-slate-300" title="Este es un parámetro componente de un perfil">Parámetro</span>
+                       }
+                    </div>
                   </td>
                   <td class="p-4">
                      @if (item.profile_id) {
@@ -556,6 +568,7 @@ export class ExamsComponent {
     range_female: [''],
     unit: [''],
     description: [''],
+    is_parameter: [false],
 
     methodology_id: [null as string | null],
     indication_id: [null as string | null]
@@ -657,6 +670,7 @@ export class ExamsComponent {
         range_female: item.range_female,
         unit: item.unit,
         description: item.description,
+        is_parameter: item.is_parameter || false,
         methodology_id: item.methodology_id || null,
         indication_id: item.indication_id || null
       });

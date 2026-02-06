@@ -47,7 +47,7 @@ import { DbService, Appointment } from '../../../core/services/db.service';
           }
 
           @for (appt of filteredAppointments(); track appt.id) {
-            <div class="bg-white p-5 border border-slate-200 flex items-center justify-between hover:border-slate-300 transition-colors group">
+            <div (dblclick)="viewAppointment(appt)" class="bg-white p-5 border border-slate-200 flex items-center justify-between hover:border-slate-300 transition-colors group cursor-pointer" title="Doble clic para ver detalles">
               
               <div class="flex items-center gap-6">
                 <div class="flex flex-col items-center justify-center bg-slate-50 w-16 h-16 border border-slate-100 text-slate-700">
@@ -137,6 +137,11 @@ import { DbService, Appointment } from '../../../core/services/db.service';
                   <option value="Consulta General">Consulta General</option>
                 </select>
               </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Observaciones</label>
+                <textarea [(ngModel)]="newAppointment.observations" rows="3" class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:border-[#3498db]" placeholder="Notas adicionales..."></textarea>
+              </div>
             </div>
 
             <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
@@ -169,6 +174,59 @@ import { DbService, Appointment } from '../../../core/services/db.service';
            </div>
         </div>
       }
+
+      <!-- VIEW DETAILS MODAL -->
+      @if (viewModal() && selectedAppointment()) {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
+           <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+              <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                 <h3 class="font-bold text-slate-800">Detalles de la Cita</h3>
+                 <button (click)="closeViewModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                 </button>
+              </div>
+              <div class="p-6 space-y-4">
+                 <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 bg-blue-50 text-[#3498db] rounded-full flex items-center justify-center text-xl">
+                       <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div>
+                       <h2 class="text-xl font-bold text-slate-800">{{ getPatientName(selectedAppointment()!) }}</h2>
+                       <span class="text-sm text-slate-500 font-mono">{{ selectedAppointment()!.date }} - {{ selectedAppointment()!.time }}</span>
+                    </div>
+                 </div>
+
+                 <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                       <span class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo de Cita</span>
+                       <span class="font-medium text-slate-700">{{ selectedAppointment()!.type }}</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                       <span class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estado</span>
+                       <span class="font-medium" 
+                          [class.text-blue-600]="selectedAppointment()!.status === 'Programado'"
+                          [class.text-green-600]="selectedAppointment()!.status === 'Completado'"
+                          [class.text-red-600]="selectedAppointment()!.status === 'Cancelado'">
+                          {{ selectedAppointment()!.status }}
+                       </span>
+                    </div>
+                 </div>
+
+                 @if (selectedAppointment()!.observations) {
+                    <div class="p-4 bg-yellow-50 border border-yellow-100 rounded text-sm text-slate-700">
+                       <span class="block text-[10px] font-bold text-yellow-600 uppercase mb-2"><i class="fas fa-sticky-note mr-1"></i> Observaciones</span>
+                       {{ selectedAppointment()!.observations }}
+                    </div>
+                 } @else {
+                    <div class="text-center text-slate-300 text-sm italic py-2">Sin observaciones registradas.</div>
+                 }
+              </div>
+              <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                 <button (click)="closeViewModal()" class="px-6 py-2 bg-slate-200 text-slate-700 font-bold rounded hover:bg-slate-300 transition-colors text-sm">Cerrar</button>
+              </div>
+           </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -187,19 +245,23 @@ export class AgendaComponent {
 
   newAppointment: Partial<Appointment> = {
     patientId: '',
-    date: new Date().toISOString().split('T')[0],
+    date: (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+    })(),
     time: '08:00',
     type: 'Toma de Muestra',
-    status: 'Programado'
+    status: 'Programado',
+    observations: ''
   };
 
   formattedDate = computed(() => {
     const d = this.selectedDate();
     const today = new Date();
 
-    // Reset hours for comparison
-    const dStr = d.toDateString();
-    const tStr = today.toDateString();
+    // Compare date strings to handle "Hoy" correctly
+    const dStr = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const tStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
 
     const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
     const dateStr = d.toLocaleDateString('es-ES', options);
@@ -211,8 +273,11 @@ export class AgendaComponent {
 
   filteredAppointments = computed(() => {
     const d = this.selectedDate();
-    const dateStr = d.toISOString().split('T')[0];
-    return this.db.appointments().filter(a => a.date === dateStr);
+    const dateStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+
+    return this.db.appointments()
+      .filter(a => a.date === dateStr)
+      .sort((a, b) => a.time.localeCompare(b.time));
   });
 
   getPatientName(appt: Appointment): string {
@@ -268,7 +333,8 @@ export class AgendaComponent {
       date: appt.date,
       time: appt.time,
       type: appt.type,
-      status: appt.status
+      status: appt.status,
+      observations: appt.observations || ''
     };
 
     // Determine external state based on presence of patientId
@@ -300,6 +366,20 @@ export class AgendaComponent {
   // Delete Modal State
   showDeleteModal = signal(false);
   appointmentToDeleteId = signal<string | null>(null);
+
+  // View Details Modal State
+  viewModal = signal(false);
+  selectedAppointment = signal<Appointment | null>(null);
+
+  viewAppointment(appt: Appointment) {
+    this.selectedAppointment.set(appt);
+    this.viewModal.set(true);
+  }
+
+  closeViewModal() {
+    this.viewModal.set(false);
+    this.selectedAppointment.set(null);
+  }
 
   openModal() {
     this.newAppointment = {
@@ -336,7 +416,8 @@ export class AgendaComponent {
         date: this.newAppointment.date!,
         time: this.newAppointment.time!,
         type: this.newAppointment.type || 'Consulta General',
-        status: 'Programado'
+        status: 'Programado',
+        observations: this.newAppointment.observations || ''
       };
 
       // Ensure we don't send empty strings if they are optional

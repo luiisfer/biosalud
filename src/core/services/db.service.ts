@@ -77,6 +77,7 @@ export interface Exam {
   profile_id?: string;
   methodology_id?: string;
   indication_id?: string;
+  is_parameter?: boolean;
   createdBy?: string;
   lastModifiedBy?: string;
 
@@ -119,6 +120,7 @@ export interface Appointment {
   time: string;
   status: 'Programado' | 'Completado' | 'Cancelado' | 'Resultados Listos';
   type: string;
+  observations?: string;
 }
 
 export interface LabResult {
@@ -201,7 +203,8 @@ export class DbService {
   // Computed statistics
   totalPatients = computed(() => this.patients().length);
   totalAppointmentsToday = computed(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const d = new Date();
+    const today = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
     return this.appointments().filter(a => a.date === today).length;
   });
   pendingResults = computed(() => this.labResults().filter(r => r.status === 'Pendiente').length);

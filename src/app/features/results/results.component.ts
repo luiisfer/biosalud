@@ -599,7 +599,9 @@ export class ResultsComponent {
       const month = (today.getMonth() + 1).toString().padStart(2, '0');
       const year = today.getFullYear().toString().slice(-2);
 
-      this.orderNumber.set(`${seq}${day}${month}${year}`);
+      const newOrder = `${seq}${day}${month}${year}`;
+      console.log('Generated Order Number:', newOrder);
+      this.orderNumber.set(newOrder);
    }
 
    // Right Column State (History Table)
@@ -629,7 +631,10 @@ export class ResultsComponent {
       values: ['', Validators.required]
    });
 
-   todayDate = new Date().toISOString().split('T')[0];
+   todayDate = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+   })();
 
    // --- COMPUTED FOR NEW ENTRY ---
    filteredPatients = computed(() => {
@@ -1177,7 +1182,8 @@ export class ResultsComponent {
       this.isProcessing.set(false);
       this.stagedResults.set([]);
       this.selectedPatient.set(null);
-      this.orderNumber.set(''); // Clear order number
+      this.orderNumber.set(''); // Clear to force refresh visual
+      this.initializeOrderNumber(); // Generate next number immediately
       this.successMessage.set(true);
       setTimeout(() => this.successMessage.set(false), 3000);
    }
