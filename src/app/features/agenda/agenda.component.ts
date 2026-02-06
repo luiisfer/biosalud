@@ -15,15 +15,36 @@ import { DbService, Appointment } from '../../../core/services/db.service';
           <p class="text-slate-400 text-sm mt-1">Gestionar flujo de citas de laboratorio</p>
         </div>
         
-        <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+        <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
+          
+          <!-- View Switcher -->
+          <div class="flex bg-slate-100 rounded-sm p-1 border border-slate-200">
+             <button (click)="setViewMode('day')" 
+                class="px-3 py-1.5 text-xs font-bold uppercase rounded-sm transition-all"
+                [class.bg-white]="viewMode() === 'day'" 
+                [class.shadow-sm]="viewMode() === 'day'" 
+                [class.text-slate-800]="viewMode() === 'day'"
+                [class.text-slate-500]="viewMode() !== 'day'">
+                Día
+             </button>
+             <button (click)="setViewMode('month')" 
+                class="px-3 py-1.5 text-xs font-bold uppercase rounded-sm transition-all"
+                [class.bg-white]="viewMode() === 'month'" 
+                [class.shadow-sm]="viewMode() === 'month'" 
+                [class.text-slate-800]="viewMode() === 'month'"
+                [class.text-slate-500]="viewMode() !== 'month'">
+                Mes
+             </button>
+          </div>
+
           <div class="flex self-start sm:self-center">
-             <button (click)="prevDay()" class="bg-white border border-slate-300 border-r-0 text-slate-600 px-4 py-2 hover:bg-slate-50 transition-colors rounded-l-sm">
+             <button (click)="prevPeriod()" class="bg-white border border-slate-300 border-r-0 text-slate-600 px-4 py-2 hover:bg-slate-50 transition-colors rounded-l-sm">
                <i class="fas fa-chevron-left"></i>
              </button>
-             <button (click)="returnToToday()" class="bg-white border border-slate-300 text-slate-800 px-6 py-2 hover:bg-slate-50 transition-colors font-medium text-sm min-w-[140px]">
+             <button (click)="returnToToday()" class="bg-white border border-slate-300 text-slate-800 px-6 py-2 hover:bg-slate-50 transition-colors font-medium text-sm min-w-[140px] capitalize">
                {{ formattedDate() }}
              </button>
-             <button (click)="nextDay()" class="bg-white border border-slate-300 border-l-0 text-slate-600 px-4 py-2 hover:bg-slate-50 transition-colors rounded-r-sm">
+             <button (click)="nextPeriod()" class="bg-white border border-slate-300 border-l-0 text-slate-600 px-4 py-2 hover:bg-slate-50 transition-colors rounded-r-sm">
                <i class="fas fa-chevron-right"></i>
              </button>
           </div>
@@ -35,9 +56,11 @@ import { DbService, Appointment } from '../../../core/services/db.service';
       </div>
 
       <div class="space-y-4">
-        <!-- Calendar List View -->
-        <div class="space-y-4">
-          @if (filteredAppointments().length === 0) {
+        
+        @if (viewMode() === 'day') {
+          <!-- Calendar List View (Day) -->
+          <div class="space-y-4 animate-fade-in">
+            @if (filteredAppointments().length === 0) {
             <div class="text-center py-12 bg-slate-50 border border-slate-200 rounded-lg">
               <p class="text-slate-500">No hay citas programadas para esta fecha.</p>
               <button (click)="openModal()" class="mt-4 text-[#3498db] font-medium hover:underline">
@@ -80,6 +103,56 @@ import { DbService, Appointment } from '../../../core/services/db.service';
             </div>
           }
         </div>
+      }
+
+      @if (viewMode() === 'month') {
+          <!-- Calendar Grid View (Month) -->
+          <div class="bg-white border border-slate-200 rounded-sm shadow-sm animate-fade-in overflow-hidden">
+             <!-- Weekday Headers -->
+             <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+                @for(day of weekDayNames; track day) {
+                   <div class="p-3 text-center text-[10px] font-bold uppercase text-slate-500 tracking-wider">{{ day }}</div>
+                }
+             </div>
+             <!-- Days Grid -->
+             <div class="grid grid-cols-7 auto-rows-[minmax(120px,auto)] bg-slate-200 gap-px border-b border-slate-200">
+                @for(cell of calendarGrid(); track $index) {
+                   <div class="bg-white p-2 relative group hover:bg-blue-50/30 transition-colors min-h-[120px] flex flex-col">
+                      @if(cell.day) {
+                         <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-sm text-slate-700 w-7 h-7 flex items-center justify-center rounded-full"
+                                  [class.bg-[#3498db]]="cell.date?.toDateString() === selectedDate().toDateString()"
+                                  [class.text-white]="cell.date?.toDateString() === selectedDate().toDateString()">
+                               {{ cell.day }}
+                            </span>
+                            @if(cell.appointments.length > 0) {
+                               <span class="text-[10px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded-full border border-slate-200">
+                                  {{ cell.appointments.length }}
+                               </span>
+                            }
+                         </div>
+                         
+                         <div class="space-y-1 overflow-y-auto max-h-[100px] custom-scrollbar flex-1">
+                            @for(appt of cell.appointments; track appt.id) {
+                               <div (click)="viewAppointment(appt); $event.stopPropagation()" 
+                                  class="text-[9px] px-1.5 py-1 rounded cursor-pointer border border-l-2 truncate transition-all hover:opacity-80"
+                                  [class.bg-blue-50]="appt.status === 'Programado'" [class.text-blue-700]="appt.status === 'Programado'" [class.border-blue-100]="appt.status === 'Programado'" [class.border-l-blue-400]="appt.status === 'Programado'"
+                                  [class.bg-green-50]="appt.status === 'Completado'" [class.text-green-700]="appt.status === 'Completado'" [class.border-green-100]="appt.status === 'Completado'" [class.border-l-green-400]="appt.status === 'Completado'"
+                                  [class.bg-purple-50]="appt.status === 'Resultados Listos'" [class.text-purple-700]="appt.status === 'Resultados Listos'" [class.border-purple-100]="appt.status === 'Resultados Listos'" [class.border-l-purple-400]="appt.status === 'Resultados Listos'"
+                                  [class.bg-red-50]="appt.status === 'Cancelado'" [class.text-red-700]="appt.status === 'Cancelado'" [class.border-red-100]="appt.status === 'Cancelado'" [class.border-l-red-400]="appt.status === 'Cancelado'"
+                                  title="{{appt.time}} - {{getPatientName(appt)}} ({{appt.status}})">
+                                  <span class="font-bold mr-1">{{ appt.time }}</span> {{ getPatientName(appt) }}
+                               </div>
+                            }
+                         </div>
+                      } @else {
+                         <div class="bg-slate-50/50 h-full"></div>
+                      }
+                   </div>
+                }
+             </div>
+          </div>
+        }
       </div>
 
       <!-- New Appointment Modal -->
@@ -239,6 +312,7 @@ import { DbService, Appointment } from '../../../core/services/db.service';
 })
 export class AgendaComponent {
   db = inject(DbService);
+  viewMode = signal<'day' | 'month'>('day'); // New State
   selectedDate = signal(new Date());
   showModal = signal(false);
   isExternalPatient = false; // Toggle state
@@ -257,16 +331,22 @@ export class AgendaComponent {
 
   formattedDate = computed(() => {
     const d = this.selectedDate();
+
+    if (this.viewMode() === 'month') {
+      return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+        .replace(/^\w/, c => c.toUpperCase());
+    }
+
     const today = new Date();
 
     // Compare date strings to handle "Hoy" correctly
     const dStr = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     const tStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
 
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', weekday: 'short' };
     const dateStr = d.toLocaleDateString('es-ES', options);
 
-    if (dStr === tStr) return `Hoy, ${dateStr}`;
+    if (dStr === tStr) return `Hoy, ${d.getDate()} ${this.getMonthShort(d.toISOString())}`;
 
     return dateStr.replace(/^\w/, (c) => c.toUpperCase());
   });
@@ -302,18 +382,27 @@ export class AgendaComponent {
     return dateStr.split('-')[2];
   }
 
-  prevDay() {
+  // Refactored Navigation
+  prevPeriod() {
     this.selectedDate.update(d => {
       const newDate = new Date(d);
-      newDate.setDate(d.getDate() - 1);
+      if (this.viewMode() === 'day') {
+        newDate.setDate(d.getDate() - 1);
+      } else {
+        newDate.setMonth(d.getMonth() - 1);
+      }
       return newDate;
     });
   }
 
-  nextDay() {
+  nextPeriod() {
     this.selectedDate.update(d => {
       const newDate = new Date(d);
-      newDate.setDate(d.getDate() + 1);
+      if (this.viewMode() === 'day') {
+        newDate.setDate(d.getDate() + 1);
+      } else {
+        newDate.setMonth(d.getMonth() + 1);
+      }
       return newDate;
     });
   }
@@ -321,6 +410,55 @@ export class AgendaComponent {
   returnToToday() {
     this.selectedDate.set(new Date());
   }
+
+  setViewMode(mode: 'day' | 'month') {
+    this.viewMode.set(mode);
+  }
+
+  // --- CALENDAR GRID LOGIC ---
+  calendarGrid = computed(() => {
+    const date = this.selectedDate();
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    // First day of the month
+    const firstDay = new Date(year, month, 1);
+    // Last day of the month
+    const lastDay = new Date(year, month + 1, 0);
+
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay(); // 0 (Sun) - 6 (Sat)
+
+    // Appointments for this month
+    const monthStr = `${year}-${(month + 1).toString().padStart(2, '0')}`;
+    const monthAppts = this.db.appointments().filter(a => a.date.startsWith(monthStr));
+
+    const grid: { date: Date | null, day: number | null, appointments: Appointment[] }[] = [];
+
+    // Padding for previous month
+    for (let i = 0; i < startDayOfWeek; i++) {
+      grid.push({ date: null, day: null, appointments: [] });
+    }
+
+    // Days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const currentDateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+      const dayAppts = monthAppts.filter(a => a.date === currentDateStr);
+      // Sort by time
+      dayAppts.sort((a, b) => a.time.localeCompare(b.time));
+
+      grid.push({
+        date: new Date(year, month, i),
+        day: i,
+        appointments: dayAppts
+      });
+    }
+
+    return grid;
+  });
+
+  weekDayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
 
   editAppointment(id: string) {
     const appt = this.db.appointments().find(a => a.id === id);

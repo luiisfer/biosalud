@@ -137,6 +137,7 @@ export interface LabResult {
   orderNumber?: string;
   price?: number;
   profileId?: string; // Optional: To track origin in UI
+  isAbnormal?: boolean;
   creator?: { name: string };
   modifier?: { name: string };
 }

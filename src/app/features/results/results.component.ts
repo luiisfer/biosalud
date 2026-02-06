@@ -306,8 +306,16 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                                  }
                               }
                              <div class="text-xs text-slate-500 font-mono mt-1">{{ item.values }}</div>
+                              @if (item.isAbnormal) {
+                                 <div class="text-xs text-red-500 font-bold mt-1"><i class="fas fa-exclamation-triangle"></i> Fuera de Rango</div>
+                              }
                           </div>
-                          <div class="flex gap-2">
+                          <div class="flex items-start gap-2 h-full">
+                             <div class="flex flex-col items-center mr-2 lg:pt-1">
+                                <label class="text-[8px] text-slate-400 font-bold uppercase mb-1">Fuera de Rango</label>
+                                <input type="checkbox" [checked]="item.isAbnormal" (change)="toggleAbnormal(item)" class="w-4 h-4 rounded text-red-500 focus:ring-red-500 cursor-pointer">
+                             </div>
+                             <div class="flex gap-2">
                              <button (click)="editStaged($index)" class="text-blue-500 hover:text-blue-700 p-1" title="Editar valor">
                                 <i class="fas fa-edit"></i>
                              </button>
@@ -316,6 +324,7 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                              </button>
                           </div>
                        </div>
+                    </div>
                     }
                  </div>
 
@@ -1042,6 +1051,10 @@ export class ResultsComponent {
       this.resetForm();
    }
 
+   toggleAbnormal(item: LabResult) {
+      item.isAbnormal = !item.isAbnormal;
+   }
+
    removeStaged(index: number) {
       this.stagedResults.update(list => list.filter((_, i) => i !== index));
    }
@@ -1143,7 +1156,11 @@ export class ResultsComponent {
             combinedValues += `► ${res.testName.toUpperCase()}\n`;
             combinedValues += `   Rango Ref: ${rangeStr}\n`;
             combinedValues += `   Unidad:    ${unitStr}\n`;
-            combinedValues += `   Valor:     ${res.values}\n\n`;
+            if (res.isAbnormal) {
+               combinedValues += `   Valor:     <b>${res.values}</b>\n\n`;
+            } else {
+               combinedValues += `   Valor:     ${res.values}\n\n`;
+            }
          });
       }
 
@@ -1161,7 +1178,12 @@ export class ResultsComponent {
             combinedValues += `► ${res.testName.toUpperCase()}\n`;
             combinedValues += `   Rango Ref: ${rangeStr}\n`;
             combinedValues += `   Unidad:    ${unitStr}\n`;
-            combinedValues += `   Valor:     ${res.values}\n\n`;
+
+            if (res.isAbnormal) {
+               combinedValues += `   Valor:     <b>${res.values}</b>\n\n`;
+            } else {
+               combinedValues += `   Valor:     ${res.values}\n\n`;
+            }
          });
       }
 
@@ -1332,10 +1354,21 @@ export class ResultsComponent {
          else if (l.startsWith('Unidad:')) { cU = l.replace('Unidad:', '').trim(); }
          else if (l.startsWith('Valor:')) {
             cV = l.replace('Valor:', '').trim();
+
+            // Check for bold markdown/html in value
+            let isBold = false;
+            // The value might be wrapped in <b>...</b> from finalizeBatch
+            if (cV.startsWith('<b>') && cV.endsWith('</b>')) {
+               isBold = true;
+               cV = cV.replace(/<\/?b>/g, '');
+            }
+
+            const weightStyle = isBold ? 'font-weight: bold; color: #000;' : 'font-weight: normal; color: #0f172a;';
+
             tTmp += `
                 <tr>
                    <td style="padding: 10px; border: 1px solid #94a3b8; font-weight: bold; font-size: 12px;">${cT}</td>
-                   <td style="padding: 10px; border: 1px solid #94a3b8; font-weight: bold; font-size: 13px; text-align: center; color: #0f172a;">${cV}</td>
+                   <td style="padding: 10px; border: 1px solid #94a3b8; ${weightStyle} font-size: 13px; text-align: center;">${cV}</td>
                    <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 11px; text-align: center; color: #475569;">${cR}</td>
                    <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 11px; text-align: center; color: #64748b;">${cU}</td>
                 </tr>
