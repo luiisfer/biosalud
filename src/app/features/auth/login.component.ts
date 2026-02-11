@@ -58,28 +58,7 @@ import { DbService } from '../../../core/services/db.service';
         <div class="mt-8 text-center">
           <p class="text-xs text-slate-400 mb-4">¿Olvidó su contraseña? Contacte al administrador de TI.</p>
           
-          <div class="border-t border-slate-100 pt-4 w-full">
-            <div class="flex items-center justify-center gap-2 text-xs bg-slate-50 p-2 rounded-sm border border-slate-100">
-                <span class="font-bold text-slate-500 uppercase">Estado BD:</span>
-                @if(db.connectionStatus() === 'checking') {
-                    <span class="text-yellow-600 flex items-center gap-1"><i class="fas fa-circle-notch fa-spin"></i> Verificando...</span>
-                }
-                @if(db.connectionStatus() === 'connected') {
-                    <span class="text-green-600 font-bold flex items-center gap-1"><i class="fas fa-check-circle"></i> Conectado</span>
-                }
-                @if(db.connectionStatus() === 'error') {
-                    <span class="text-red-600 font-bold flex items-center gap-1"><i class="fas fa-times-circle"></i> Falló</span>
-                }
-            </div>
-             @if(db.connectionStatus() === 'error') {
-                <p class="text-[10px] text-red-500 text-center mt-2 max-w-xs mx-auto border border-red-100 bg-red-50 p-2 rounded-sm">
-                   {{ db.connectionError() }}
-                </p>
-                <div class="text-center mt-2">
-                   <button (click)="db.testConnection()" class="text-[10px] text-[#3498db] hover:underline uppercase font-bold">Reintentar Conexión</button>
-                </div>
-             }
-          </div>
+
         </div>
       </div>
     </div>

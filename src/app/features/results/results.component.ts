@@ -205,46 +205,98 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                        </div>
                    </div>
 
-                   @if (!selectedProfileId()) {
-                      <div>
-                         <div class="flex justify-between items-end mb-2">
-                            <label class="block text-xs font-bold text-slate-500 uppercase">Valores Obtenidos</label>
+                   @if (!selectedProfileId() && examParameters().length === 0) {
+                      <!-- SHOW TEXTAREA ONLY IF NO PARAMETERS AND NO PROFILE -->
+                      <!-- If it has parameters, we hide this textarea and show the params grid below -->
+                       <div>
+                        <div class="flex justify-between items-end mb-2">
+                           <label class="block text-xs font-bold text-slate-500 uppercase">Valores Obtenidos</label>
+                        </div>
+
+                        <!-- Reference Range Hint -->
+                        @if (currentExam(); as exam) {
+                           <div class="bg-blue-50 border border-blue-100 p-3 mb-2 rounded-sm text-sm text-blue-800 flex items-start gap-2 animate-fade-in">
+                              <i class="fas fa-info-circle mt-0.5"></i>
+                              <div>
+                                 <div class="font-bold text-xs uppercase tracking-wide opacity-80">Referencia</div>
+                                 <div>Rango esperado: <span class="font-mono font-bold">{{ getRangeForPatient(exam) }}</span></div>
+                                 @if(exam.unit) { <div class="text-xs">Unidad: {{ exam.unit }}</div> }
+                                 @if(exam.description) { <div class="text-xs mt-1 italic text-blue-600">{{ exam.description }}</div> }
+                              </div>
+                           </div>
+                        }
+
+                        <textarea formControlName="values" rows="4" placeholder="Ej: 110" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 font-mono"></textarea>
+                     </div>
+                   } @else if (selectedProfileId()) {
+                      <div class="space-y-6 bg-purple-50/50 p-6 border border-purple-100 rounded-sm animate-fade-in">
+                         <div class="flex items-center gap-2 text-purple-800 mb-2 border-b border-purple-200 pb-2">
+                            <i class="fas fa-layer-group"></i>
+                            <span class="font-bold text-xs uppercase tracking-widest">Resultados del Perfil: {{ currentProfile()?.name }}</span>
                          </div>
+                         
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            @for (item of profileExamsWithParams(); track item.exam.id) {
+                               <div class="col-span-1 md:col-span-2 bg-white p-4 border border-purple-100 shadow-sm rounded-sm">
+                                  <div class="mb-3 font-bold text-slate-700 text-sm flex items-center gap-2">
+                                     <i class="fas fa-vial text-purple-300"></i> {{ item.exam.name }}
+                                  </div>
 
-                         <!-- Reference Range Hint -->
-                         @if (currentExam(); as exam) {
-                            <div class="bg-blue-50 border border-blue-100 p-3 mb-2 rounded-sm text-sm text-blue-800 flex items-start gap-2 animate-fade-in">
-                               <i class="fas fa-info-circle mt-0.5"></i>
-                               <div>
-                                  <div class="font-bold text-xs uppercase tracking-wide opacity-80">Referencia</div>
-                                  <div>Rango esperado: <span class="font-mono font-bold">{{ getRangeForPatient(exam) }}</span></div>
-                                  @if(exam.unit) { <div class="text-xs">Unidad: {{ exam.unit }}</div> }
-                                  @if(exam.description) { <div class="text-xs mt-1 italic text-blue-600">{{ exam.description }}</div> }
+                                  @if (item.parameters.length > 0) {
+                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4 border-l-2 border-purple-50">
+                                        @for (param of item.parameters; track param.id) {
+                                           <div>
+                                              <label class="block text-[10px] font-black text-slate-500 mb-1 tracking-tight">
+                                                 {{ param.name }} 
+                                                 @if(param.unit) { <span class="text-purple-400">({{ param.unit }})</span> }
+                                              </label>
+                                              <input 
+                                                 type="text" 
+                                                 [placeholder]="getRangeForPatient(param) ? 'Ref: ' + getRangeForPatient(param) : 'Ingrese Valor'"
+                                                 (input)="updateProfileValue(param.id, $event)"
+                                                 class="w-full p-2 bg-slate-50 border border-slate-100 focus:bg-white focus:border-purple-400 outline-none text-sm font-mono text-slate-700 transition-all rounded">
+                                           </div>
+                                        }
+                                     </div>
+                                  } @else {
+                                     <div>
+                                        <label class="block text-[10px] font-black text-slate-500 mb-1 tracking-tight">
+                                           Resultado
+                                           @if(item.exam.unit) { <span class="text-purple-400">({{ item.exam.unit }})</span> }
+                                        </label>
+                                        <input 
+                                           type="text" 
+                                           [placeholder]="getRangeForPatient(item.exam) ? 'Ref: ' + getRangeForPatient(item.exam) : 'Ingrese Valor'"
+                                           (input)="updateProfileValue(item.exam.id, $event)"
+                                           class="w-full p-2 bg-slate-50 border border-slate-100 focus:bg-white focus:border-purple-400 outline-none text-sm font-mono text-slate-700 transition-all rounded">
+                                     </div>
+                                  }
                                </div>
-                            </div>
-                         }
-
-                         <textarea formControlName="values" rows="4" placeholder="Ej: 110" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 font-mono"></textarea>
+                            }
+                         </div>
                       </div>
-                   } @else {
-                      <div class="space-y-4 bg-purple-50/50 p-6 border border-purple-100 rounded-sm animate-fade-in">
-                         <div class="flex items-center gap-2 text-purple-800 mb-2">
-                            <i class="fas fa-keyboard"></i>
-                            <span class="font-bold text-xs uppercase tracking-widest">Ingresar Resultados del Perfil</span>
+                   }
+
+                   <!-- Parameters Input for Exams with assigned parameters -->
+                   @if (selectedExamId() && examParameters().length > 0) {
+                      <div class="space-y-4 bg-blue-50/50 p-6 border border-blue-100 rounded-sm animate-fade-in mt-4">
+                         <div class="flex items-center gap-2 text-blue-800 mb-2">
+                            <i class="fas fa-vial"></i>
+                            <span class="font-bold text-xs uppercase tracking-widest">Parámetros del Examen</span>
                          </div>
                          
                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @for (ex of profileExams(); track ex.id) {
-                               <div class="bg-white p-3 border border-purple-100 shadow-sm rounded-sm">
+                            @for (param of examParameters(); track param.id) {
+                               <div class="bg-white p-3 border border-blue-100 shadow-sm rounded-sm">
                                   <label class="block text-[10px] font-black text-slate-500 mb-2 tracking-tight">
-                                     {{ ex.name }} 
-                                     @if(ex.unit) { <span class="text-purple-400">({{ ex.unit }})</span> }
+                                     {{ param.name }} 
+                                     @if(param.unit) { <span class="text-blue-400">({{ param.unit }})</span> }
                                   </label>
                                   <input 
                                      type="text" 
-                                     [placeholder]="getRangeForPatient(ex) ? 'Ref: ' + getRangeForPatient(ex) : 'Ingrese Valor'"
-                                     (input)="updateProfileValue(ex.id, $event)"
-                                     class="w-full p-2 bg-slate-50 border border-slate-100 focus:bg-white focus:border-purple-400 outline-none text-sm font-mono text-slate-700 transition-all">
+                                     [placeholder]="getRangeForPatient(param) ? 'Ref: ' + getRangeForPatient(param) : 'Ingrese Valor'"
+                                     (input)="updateProfileValue(param.id, $event)"
+                                     class="w-full p-2 bg-slate-50 border border-slate-100 focus:bg-white focus:border-blue-400 outline-none text-sm font-mono text-slate-700 transition-all">
                                </div>
                             }
                          </div>
@@ -305,16 +357,37 @@ import { DbService, LabResult, Patient, Exam } from '../../../core/services/db.s
                                     }
                                  }
                               }
-                             <div class="text-xs text-slate-500 font-mono mt-1">{{ item.values }}</div>
-                              @if (item.isAbnormal) {
-                                 <div class="text-xs text-red-500 font-bold mt-1"><i class="fas fa-exclamation-triangle"></i> Fuera de Rango</div>
-                              }
+                             @if (item.values.includes('\n')) {
+                                <div class="mt-2 space-y-1 bg-slate-50 p-2 rounded border border-slate-100">
+                                   @for (line of item.values.split('\n'); track $index) {
+                                      <div class="flex items-center justify-between text-xs text-slate-600 font-mono py-1 border-b border-slate-100 last:border-0 hover:bg-white px-1 transition-colors group/line">
+                                         <span [class.font-bold]="line.includes(' (*)')" [class.text-red-600]="line.includes(' (*)')">
+                                            {{ line.replace(' (*)', '') }}
+                                         </span>
+                                         <label class="flex items-center gap-1 cursor-pointer">
+                                            <span class="text-[9px] uppercase font-bold text-slate-300 group-hover/line:text-red-300 transition-colors" [class.text-red-500]="line.includes(' (*)')">Fuera de Rango</span>
+                                            <input type="checkbox" 
+                                               [checked]="line.includes(' (*)')" 
+                                               (change)="toggleParamAbnormal(item, $index)"
+                                               class="w-3 h-3 rounded text-red-500 focus:ring-red-500 cursor-pointer border-slate-300">
+                                         </label>
+                                      </div>
+                                   }
+                                </div>
+                             } @else {
+                                <div class="text-xs text-slate-500 font-mono mt-1">{{ item.values }}</div>
+                                @if (item.isAbnormal) {
+                                   <div class="text-xs text-red-500 font-bold mt-1"><i class="fas fa-exclamation-triangle"></i> Fuera de Rango</div>
+                                }
+                             }
                           </div>
                           <div class="flex items-start gap-2 h-full">
-                             <div class="flex flex-col items-center mr-2 lg:pt-1">
-                                <label class="text-[8px] text-slate-400 font-bold uppercase mb-1">Fuera de Rango</label>
-                                <input type="checkbox" [checked]="item.isAbnormal" (change)="toggleAbnormal(item)" class="w-4 h-4 rounded text-red-500 focus:ring-red-500 cursor-pointer">
-                             </div>
+                             @if (!item.values.includes('\n')) {
+                                <div class="flex flex-col items-center mr-2 lg:pt-1">
+                                   <label class="text-[8px] text-slate-400 font-bold uppercase mb-1">Fuera de Rango</label>
+                                   <input type="checkbox" [checked]="item.isAbnormal" (change)="toggleAbnormal(item)" class="w-4 h-4 rounded text-red-500 focus:ring-red-500 cursor-pointer">
+                                </div>
+                             }
                              <div class="flex gap-2">
                              <button (click)="editStaged($index)" class="text-blue-500 hover:text-blue-700 p-1" title="Editar valor">
                                 <i class="fas fa-edit"></i>
@@ -658,7 +731,7 @@ export class ResultsComponent {
    filteredExamList = computed(() => {
       const term = this.examSearchTerm().toLowerCase();
 
-      const exams = this.db.exams().map(e => ({ ...e, isProfile: false }));
+      const exams = this.db.exams().filter(e => !e.is_parameter).map(e => ({ ...e, isProfile: false }));
       const profiles = this.db.profiles().map(p => ({ ...p, isProfile: true, code: 'PERFIL', unit: undefined, range: undefined }));
 
       const combined = [...exams, ...profiles];
@@ -687,6 +760,27 @@ export class ResultsComponent {
       if (!id) return [];
       const examIds = this.db.profileExamsMap()[id] || [];
       return this.db.exams().filter(e => examIds.includes(e.id));
+   });
+
+   // Structure: [{ exam: Exam, parameters: Parameter[] }]
+   profileExamsWithParams = computed(() => {
+      const exams = this.profileExams();
+      const examParamsMap = this.db.examParametersMap();
+      const allParams = this.db.parameters();
+
+      return exams.map(exam => {
+         const paramIds = examParamsMap[exam.id] || [];
+         const parameters = allParams.filter(p => paramIds.includes(p.id));
+         return { exam, parameters };
+      });
+   });
+
+   // Exams for a specific selected exam that has parameters (e.g. Hematology)
+   examParameters = computed(() => {
+      const id = this.selectedExamId();
+      if (!id) return [];
+      const paramIds = this.db.examParametersMap()[id] || [];
+      return this.db.parameters().filter(p => paramIds.includes(p.id));
    });
 
    // --- COMPUTED FOR HISTORY TABLE ---
@@ -1014,34 +1108,67 @@ export class ResultsComponent {
 
       if (this.selectedProfileId()) {
          // Add all exams in profile
-         const exams = this.profileExams();
+         const items = this.profileExamsWithParams();
          const currentVals = this.profileValues();
 
-         const results: LabResult[] = exams.map(exam => ({
-            id: Math.floor(Math.random() * 100000).toString(),
-            patientId,
-            testName: exam.name,
-            date: this.todayDate,
-            values: currentVals[exam.id] || 'Pendiente',
-            status: 'Pendiente',
-            price: exam.price,
-            profileId: this.selectedProfileId()! // Store origin profile ID
-         }));
+         const results: LabResult[] = items.map(item => {
+            let valueStr = '';
+
+            if (item.parameters.length > 0) {
+               valueStr = item.parameters.map(p => {
+                  const val = currentVals[p.id] || 'Pendiente';
+                  const unitStr = p.unit ? ` ${p.unit}` : '';
+                  return `${p.name}: ${val}${unitStr}`;
+               }).join('\n');
+            } else {
+               valueStr = currentVals[item.exam.id] || 'Pendiente';
+            }
+
+            return {
+               id: Math.floor(Math.random() * 100000).toString(),
+               patientId,
+               testName: item.exam.name,
+               date: this.todayDate,
+               values: valueStr,
+               status: 'Pendiente',
+               price: item.exam.price,
+               profileId: this.selectedProfileId()! // Store origin profile ID
+            };
+         });
          this.stagedResults.update(list => [...list, ...results]);
       } else {
-         if (!formVal.values) {
-            alert('Por favor, ingrese el valor del examen.');
-            return;
-         }
          const exam = this.db.exams().find(e => e.id === formVal.examId);
          if (!exam) return;
+
+         let finalValues = '';
+
+         // Check if exam has parameters
+         const params = this.examParameters();
+         if (params.length > 0) {
+            const currentVals = this.profileValues();
+            // Format parameters into string
+            finalValues = params.map(p => {
+               const val = currentVals[p.id] || 'Pendiente';
+               const unitStr = p.unit ? ` ${p.unit}` : '';
+               return `${p.name}: ${val}${unitStr}`;
+            }).join('\n');
+
+            if (!finalValues) finalValues = 'Pendiente';
+         } else {
+            // Regular exam without parameters
+            if (!formVal.values) {
+               alert('Por favor, ingrese el valor del examen.');
+               return;
+            }
+            finalValues = formVal.values;
+         }
 
          const newResult: LabResult = {
             id: Math.floor(Math.random() * 100000).toString(),
             patientId,
             testName: exam.name,
             date: this.todayDate,
-            values: formVal.values!,
+            values: finalValues,
             status: 'Pendiente',
             price: exam.price
          };
@@ -1054,6 +1181,23 @@ export class ResultsComponent {
    toggleAbnormal(item: LabResult) {
       item.isAbnormal = !item.isAbnormal;
    }
+
+   toggleParamAbnormal(item: LabResult, index: number) {
+      const lines = item.values.split('\n');
+      if (lines[index]) {
+         if (lines[index].includes(' (*)') || lines[index].endsWith(' (*)')) {
+            lines[index] = lines[index].replace(' (*)', '');
+         } else {
+            lines[index] = lines[index] + ' (*)';
+         }
+         item.values = lines.join('\n');
+
+         // Update isAbnormal flag for visual consistency
+         item.isAbnormal = item.values.includes(' (*)');
+      }
+   }
+
+
 
    removeStaged(index: number) {
       this.stagedResults.update(list => list.filter((_, i) => i !== index));
@@ -1150,16 +1294,60 @@ export class ResultsComponent {
 
          results.forEach(res => {
             const examDef = exams.find(e => e.name === res.testName);
-            const rangeStr = this.getRangeForPatient(examDef);
-            const unitStr = (examDef?.unit) || '';
+            // Check composite
+            const isComposite = res.values && typeof res.values === 'string' && res.values.includes('\n') && res.values.includes(':');
 
-            combinedValues += `► ${res.testName.toUpperCase()}\n`;
-            combinedValues += `   Rango Ref: ${rangeStr}\n`;
-            combinedValues += `   Unidad:    ${unitStr}\n`;
-            if (res.isAbnormal) {
-               combinedValues += `   Valor:     <b>${res.values}</b>\n\n`;
+            if (isComposite) {
+               // Composite Exam inside Profile
+               combinedValues += `■ ${res.testName}\n`;
+
+               const lines = res.values.split('\n');
+               lines.forEach(line => {
+                  const parts = line.split(':');
+                  if (parts.length >= 2) {
+                     const pName = parts[0].trim();
+                     let pVal = parts.slice(1).join(':').trim();
+
+                     // Lookup Parameter
+                     const paramDef = this.db.parameters().find(p => p.name.toUpperCase() === pName.toUpperCase());
+                     const pRange = this.getRangeForPatient(paramDef);
+                     const pUnit = paramDef?.unit || '';
+
+                     // Check for abnormality marker (*)
+                     const isAbnormalParam = pVal.includes(' (*)') || pVal.endsWith(' (*)');
+                     if (isAbnormalParam) {
+                        pVal = pVal.replace(' (*)', '');
+                     }
+
+                     // Strip unit from value if present
+                     if (pUnit && pVal.endsWith(pUnit)) {
+                        pVal = pVal.substring(0, pVal.lastIndexOf(pUnit)).trim();
+                     }
+
+                     combinedValues += `► ${pName.toUpperCase()}\n`;
+                     combinedValues += `   Rango Ref: ${pRange}\n`;
+                     combinedValues += `   Unidad:    ${pUnit}\n`;
+                     if (isAbnormalParam) {
+                        combinedValues += `   Valor:     <b>${pVal}</b>\n`;
+                     } else {
+                        combinedValues += `   Valor:     ${pVal}\n`;
+                     }
+                  }
+               });
+               combinedValues += `\n`;
             } else {
-               combinedValues += `   Valor:     ${res.values}\n\n`;
+               // Simple Exam
+               const rangeStr = this.getRangeForPatient(examDef);
+               const unitStr = (examDef?.unit) || '';
+
+               combinedValues += `► ${res.testName.toUpperCase()}\n`;
+               combinedValues += `   Rango Ref: ${rangeStr}\n`;
+               combinedValues += `   Unidad:    ${unitStr}\n`;
+               if (res.isAbnormal) {
+                  combinedValues += `   Valor:     <b>${res.values}</b>\n\n`;
+               } else {
+                  combinedValues += `   Valor:     ${res.values}\n\n`;
+               }
             }
          });
       }
@@ -1175,14 +1363,59 @@ export class ResultsComponent {
             const rangeStr = this.getRangeForPatient(examDef);
             const unitStr = (examDef?.unit) || '';
 
-            combinedValues += `► ${res.testName.toUpperCase()}\n`;
-            combinedValues += `   Rango Ref: ${rangeStr}\n`;
-            combinedValues += `   Unidad:    ${unitStr}\n`;
+            // DETECT COMPOSITE EXAM (Parameters)
+            // Metric: values contains multiple newlines and ":" 
+            // (e.g. "Color: Amarillo\npH: 5.0")
+            const isComposite = res.values && typeof res.values === 'string' && res.values.includes('\n') && res.values.includes(':');
 
-            if (res.isAbnormal) {
-               combinedValues += `   Valor:     <b>${res.values}</b>\n\n`;
+            if (isComposite) {
+               // Treat as a "Mini Profile"
+               combinedValues += `■ ${res.testName}\n`;
+
+               const lines = res.values.split('\n');
+               lines.forEach(line => {
+                  const parts = line.split(':');
+                  if (parts.length >= 2) {
+                     const pName = parts[0].trim();
+                     let pVal = parts.slice(1).join(':').trim();
+
+                     // Lookup Parameter
+                     const paramDef = this.db.parameters().find(p => p.name.toUpperCase() === pName.toUpperCase());
+                     const pRange = this.getRangeForPatient(paramDef);
+                     const pUnit = paramDef?.unit || '';
+
+                     // Check for abnormality marker (*)
+                     const isAbnormalParam = pVal.includes(' (*)') || pVal.endsWith(' (*)');
+                     if (isAbnormalParam) {
+                        pVal = pVal.replace(' (*)', '');
+                     }
+
+                     // Strip unit from value if present
+                     if (pUnit && pVal.endsWith(pUnit)) {
+                        pVal = pVal.substring(0, pVal.lastIndexOf(pUnit)).trim();
+                     }
+
+                     combinedValues += `► ${pName.toUpperCase()}\n`;
+                     combinedValues += `   Rango Ref: ${pRange}\n`;
+                     combinedValues += `   Unidad:    ${pUnit}\n`;
+                     if (isAbnormalParam) {
+                        combinedValues += `   Valor:     <b>${pVal}</b>\n`;
+                     } else {
+                        combinedValues += `   Valor:     ${pVal}\n`;
+                     }
+                  }
+               });
+               combinedValues += `\n`; // Spacing after composite exam
             } else {
-               combinedValues += `   Valor:     ${res.values}\n\n`;
+               // Standard Single Exam
+               combinedValues += `► ${res.testName.toUpperCase()}\n`;
+               combinedValues += `   Rango Ref: ${rangeStr}\n`;
+               combinedValues += `   Unidad:    ${unitStr}\n`;
+               if (res.isAbnormal) {
+                  combinedValues += `   Valor:     <b>${res.values}</b>\n\n`;
+               } else {
+                  combinedValues += `   Valor:     ${res.values}\n\n`;
+               }
             }
          });
       }
@@ -1234,11 +1467,12 @@ export class ResultsComponent {
       }
 
       const worker = (window as any).html2pdf().from(html).set({
-         margin: 15,
+         margin: [15, 15, 55, 15],
          filename: fileName,
          image: { type: 'jpeg', quality: 0.98 },
          html2canvas: { scale: 3, useCORS: true, allowTaint: true, letterRendering: true },
-         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+         pagebreak: { mode: ['css', 'legacy'] }
       });
 
       try {
@@ -1266,6 +1500,9 @@ export class ResultsComponent {
          const dateStr = `Impreso el: ${new Date().toLocaleString('es-GT')}`;
          const labName = 'Laboratorio BioSalud Huehuetenango';
 
+         const rawSig = this.db.labSignature();
+         const sigImg = typeof rawSig === 'string' ? rawSig : null;
+
          for (let i = 1; i <= totalPages; i++) {
             pdf.setPage(i);
             pdf.setFontSize(8); // Slightly smaller for footer
@@ -1274,6 +1511,79 @@ export class ResultsComponent {
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
             const footerY = pageHeight - 10;
+
+            // --- DISCLAIMER & SIGNATURE ON EVERY PAGE ---
+
+            // Define positions
+            const contentBottom = pageHeight - 15; // Bottom limit for page number/date
+            const footerHeight = 35; // Reduced height estimation
+            const footerTop = contentBottom - footerHeight - 10; // Closer to bottom (less padding)
+
+            // 1. Disclaimer Text (Small font)
+            pdf.setFontSize(6);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(100, 116, 139); // slate-500
+            const disclaimer1 = "Nuestro proceso analítico completo se somete a rigurosos controles de calidad, utilizando herramientas estadísticas avanzadas para laboratorios clínicos. Esto garantiza la precisión y confiabilidad de todos nuestros resultados.";
+            const disclaimer2 = "El original de este documento se encuentra en los archivos de Laboratorio BioSalud Huehuetenango. El uso de este documento es responsabilidad exclusiva del cliente.";
+
+            const splitDisc1 = pdf.splitTextToSize(disclaimer1, pageWidth - 30);
+            const splitDisc2 = pdf.splitTextToSize(disclaimer2, pageWidth - 30);
+
+            let currentY = footerTop;
+            pdf.text(splitDisc1, 15, currentY);
+            currentY += (splitDisc1.length * 3) + 2; // Line height approx 3mm
+
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(0, 0, 0); // Black for second part
+            pdf.text(splitDisc2, 15, currentY);
+            currentY += (splitDisc2.length * 3) + 5;
+
+            // 2. Signature Image & Details (Centered below disclaimer)
+            if (sigImg) {
+               try {
+                  const centerX = pageWidth / 2;
+
+                  // Reduced spacing before signature starts (closer to disclaimer)
+                  currentY += 2;
+
+                  const sigWidth = 25;
+                  const sigHeight = 12;
+
+                  // Image
+                  pdf.addImage(sigImg, 'PNG', centerX - (sigWidth / 2), currentY, sigWidth, sigHeight);
+                  currentY += sigHeight; // Maintain tight flow
+
+                  // Line
+                  pdf.setDrawColor(15, 23, 42);
+                  pdf.setLineWidth(0.5);
+                  pdf.line(centerX - 35, currentY, centerX + 35, currentY);
+                  currentY += 4;
+
+                  // Name
+                  pdf.setFontSize(8);
+                  pdf.setFont("helvetica", "bold");
+                  pdf.setTextColor(15, 23, 42);
+                  const name = "LICDA. YÉNNIFER SOTO";
+                  const nameW = pdf.getStringUnitWidth(name) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+                  pdf.text(name, centerX - (nameW / 2), currentY);
+                  currentY += 3.5;
+
+                  // Title
+                  pdf.setFontSize(7);
+                  pdf.setFont("helvetica", "normal");
+                  pdf.setTextColor(100, 116, 139);
+                  const title = "Química Bióloga";
+                  const titleW = pdf.getStringUnitWidth(title) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+                  pdf.text(title, centerX - (titleW / 2), currentY);
+                  currentY += 3;
+
+                  // Col (Col. 6,808)
+                  const col = "Col. 6,808";
+                  const colW = pdf.getStringUnitWidth(col) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+                  pdf.text(col, centerX - (colW / 2), currentY);
+
+               } catch (e) { console.error('Sig Err', e); }
+            }
 
             // Left: Date
             pdf.text(dateStr, 15, footerY);
@@ -1318,9 +1628,8 @@ export class ResultsComponent {
       const rawLogo = this.db.labLogo();
       const logoImage = typeof rawLogo === 'string' ? rawLogo : null;
 
-      const signatureHtml = sigImage
-         ? `<img src="${sigImage}" style="height: 70px; object-fit: contain;" alt="Firma">`
-         : `<div style="height:40px;"></div><span style="font-family: 'Brush Script MT', cursive; font-size: 20px; color: #475569; font-weight: bold; font-style: italic;">${res.createdBy || 'Bioquímico'}</span>`;
+      const signatureHtml = ''; // Removed from HTML flow as it is now in PDF footer
+
 
       const logoHtml = logoImage
          ? `<img src="${logoImage}" style="width: 110px; height: auto; display: block; margin: 0 auto;" alt="Logo">`
@@ -1336,18 +1645,44 @@ export class ResultsComponent {
       const printScript = mode === 'view' ? `<script>setTimeout(() => { window.print(); }, 800);</script>` : '';
 
       // --- PARSING LOGIC FOR TABLE (Simplified and Robust) ---
-      let tableRowsHtml = '';
+      let tablesHtml = '';
+      let currentTBody = '';
+
+      const wrapTable = (content: string) => `
+          <table class="table-results" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+             <thead>
+                <tr>
+                   <th style="padding: 3px; border: 1px solid #64748b; background-color: #f8fafc; font-size: 9px; text-transform: uppercase;">Estudio</th>
+                   <th style="padding: 3px; border: 1px solid #64748b; background-color: #f8fafc; font-size: 9px; text-transform: uppercase;">Resultado</th>
+                   <th style="padding: 3px; border: 1px solid #64748b; background-color: #f8fafc; font-size: 9px; text-transform: uppercase;">Referencia</th>
+                   <th style="padding: 3px; border: 1px solid #64748b; background-color: #f8fafc; font-size: 9px; text-transform: uppercase;">Unidad</th>
+                </tr>
+             </thead>
+             ${content}
+          </table>
+       `;
+
       const resValuesStr = String(res.values || '');
       const lines = resValuesStr.split('\n');
 
-      let tTmp = '';
       let cT = '', cR = '', cU = '', cV = '';
       for (const line of lines) {
          const l = line.trim();
          if (!l) continue;
+
          if (l.startsWith('■')) {
-            if (tTmp) tableRowsHtml += `<tbody style="page-break-inside: avoid;">${tTmp}</tbody>`;
-            tTmp = `<tr><td colspan="4" style="padding: 10px; border: 2px solid #334155; font-weight: bold; font-size: 14px; text-align: center; background: #f1f5f9; text-transform: uppercase;">${l.replace('■', '').trim()}</td></tr>`;
+            const headerText = l.replace('■', '').trim();
+            // Force page break for specific headers (separation of exams like Heces/Orina) if we have previous content
+            if (currentTBody && (headerText.toUpperCase().includes('ORINA') || headerText.toUpperCase().includes('HECES'))) {
+               if (currentTBody) {
+                  tablesHtml += wrapTable(`<tbody>${currentTBody}</tbody>`);
+               }
+               tablesHtml += '<div style="display:block; page-break-before: always;"></div>';
+               currentTBody = '';
+            }
+
+            // Append header row directly to current tbody to keep flow continuous
+            currentTBody += `<tr style="page-break-after: avoid; page-break-inside: avoid;"><td colspan="4" style="padding: 3px; border: 2px solid #334155; font-weight: bold; font-size: 10px; text-align: center; background: #f1f5f9; text-transform: uppercase;">${headerText}</td></tr>`;
          } else if (l.startsWith('►')) {
             cT = l.replace('►', '').trim(); cR = ''; cU = ''; cV = '';
          } else if (l.startsWith('Rango Ref:')) { cR = l.replace('Rango Ref:', '').trim(); }
@@ -1357,7 +1692,6 @@ export class ResultsComponent {
 
             // Check for bold markdown/html in value
             let isBold = false;
-            // The value might be wrapped in <b>...</b> from finalizeBatch
             if (cV.startsWith('<b>') && cV.endsWith('</b>')) {
                isBold = true;
                cV = cV.replace(/<\/?b>/g, '');
@@ -1365,28 +1699,30 @@ export class ResultsComponent {
 
             const weightStyle = isBold ? 'font-weight: bold; color: #000;' : 'font-weight: normal; color: #0f172a;';
 
-            tTmp += `
-                <tr>
-                   <td style="padding: 10px; border: 1px solid #94a3b8; font-weight: bold; font-size: 12px;">${cT}</td>
-                   <td style="padding: 10px; border: 1px solid #94a3b8; ${weightStyle} font-size: 13px; text-align: center;">${cV}</td>
-                   <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 11px; text-align: center; color: #475569;">${cR}</td>
-                   <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 11px; text-align: center; color: #64748b;">${cU}</td>
-                </tr>
-             `;
+            currentTBody += `
+                 <tr>
+                    <td style="padding: 2px; border: 1px solid #94a3b8; font-weight: bold; font-size: 8px;">${cT}</td>
+                    <td style="padding: 2px; border: 1px solid #94a3b8; ${weightStyle} font-size: 9px; text-align: center;">${cV}</td>
+                    <td style="padding: 2px; border: 1px solid #94a3b8; font-size: 8px; text-align: center; color: #475569;">${cR}</td>
+                    <td style="padding: 2px; border: 1px solid #94a3b8; font-size: 8px; text-align: center; color: #64748b;">${cU}</td>
+                 </tr>
+              `;
          }
       }
-      if (tTmp) tableRowsHtml += `<tbody style="page-break-inside: avoid;">${tTmp}</tbody>`;
-      if (!tableRowsHtml) {
-         tableRowsHtml = `
+      if (currentTBody) {
+         tablesHtml += wrapTable(`<tbody>${currentTBody}</tbody>`);
+      }
+      if (!tablesHtml) {
+         tablesHtml = wrapTable(`
              <tbody>
                 <tr>
-                   <td style="padding: 12px; border: 1px solid #94a3b8; font-weight: bold; font-size: 12px; width: 40%;">${res.testName}</td>
-                   <td style="padding: 12px; border: 1px solid #94a3b8; font-size: 12px; font-family: monospace; text-align: center;">${resValuesStr}</td>
-                   <td style="padding: 12px; border: 1px solid #94a3b8; font-size: 12px; text-align: center;">-</td>
-                   <td style="padding: 12px; border: 1px solid #94a3b8; font-size: 12px; text-align: center;">-</td>
+                   <td style="padding: 5px; border: 1px solid #94a3b8; font-weight: bold; font-size: 11px; width: 40%;">${res.testName}</td>
+                   <td style="padding: 5px; border: 1px solid #94a3b8; font-size: 11px; font-family: monospace; text-align: center;">${resValuesStr}</td>
+                   <td style="padding: 5px; border: 1px solid #94a3b8; font-size: 11px; text-align: center;">-</td>
+                   <td style="padding: 5px; border: 1px solid #94a3b8; font-size: 11px; text-align: center;">-</td>
                 </tr>
              </tbody>
-           `;
+          `);
       }
 
       // --- METHODOLOGY EXTRACTION ---
@@ -1506,31 +1842,10 @@ export class ResultsComponent {
              REPORTE DE: ${res.testName}
           </div>
 
-          <table class="table-results">
-             <thead>
-                <tr>
-                   <th>Estudio</th>
-                   <th>Resultado</th>
-                   <th>Referencia</th>
-                   <th>Unidad</th>
-                </tr>
-             </thead>
-             ${tableRowsHtml}
-          </table>
+             ${tablesHtml}
 
            <!-- Wrap disclaimer and signature to prevent them from splitting separately -->
            <div style="page-break-inside: avoid; break-inside: avoid; margin-top: 20px;">
-              <div class="footer-disclaimer">
-                 Nuestro proceso analítico completo se somete a rigurosos controles de calidad, utilizando herramientas estadísticas avanzadas para laboratorios clínicos. Esto garantiza la precisión y confiabilidad de todos nuestros resultados.
-                 <br><br>
-                 <span style="font-weight: bold; color: black;">El original de este documento se encuentra en los archivos de Laboratorio BioSalud Huehuetenango. El uso de este documento es responsabilidad exclusiva del cliente.</span>
-              </div>
-
-              <div class="signature-section">
-                 <div class="signature-line">${signatureHtml}</div>
-                 <p style="font-weight: bold; font-size: 12px; margin: 0;">Licda. Yénnifer Soto</p>
-                 <p style="font-size: 10px; color: #64748b; margin: 0;">Química Bióloga, Col. 6,808</p>
-              </div>
            </div>
 
 

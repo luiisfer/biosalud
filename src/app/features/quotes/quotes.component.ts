@@ -261,7 +261,7 @@ export class QuotesComponent {
   quoteToDeleteId = signal<number | null>(null);
 
   availableItems = computed(() => {
-    const exams = this.db.exams().map(e => ({ ...e, type: 'exam', price: e.price || 0, uniqueId: 'exam-' + e.id }));
+    const exams = this.db.exams().filter(e => !e.is_parameter).map(e => ({ ...e, type: 'exam', price: e.price || 0, uniqueId: 'exam-' + e.id }));
     const profiles = this.db.profiles().map(p => ({ ...p, type: 'profile', price: p.price || 0, uniqueId: 'profile-' + p.id }));
     return [...exams, ...profiles].sort((a, b) => a.name.localeCompare(b.name));
   });

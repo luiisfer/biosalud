@@ -19,6 +19,7 @@ const TBL_USERS = 'users';
 const TBL_SALES = 'sales';
 const TBL_QUOTES = 'quotes';
 const TBL_SETTINGS = 'settings';
+const TBL_PARAMETERS = 'parameters';
 
 export interface User {
   id: string;
@@ -78,6 +79,22 @@ export interface Exam {
   methodology_id?: string;
   indication_id?: string;
   is_parameter?: boolean;
+  createdBy?: string;
+  lastModifiedBy?: string;
+
+  creator?: { name: string };
+  modifier?: { name: string };
+}
+
+export interface Parameter {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  range?: string;
+  range_male?: string;
+  range_female?: string;
+  unit?: string;
   createdBy?: string;
   lastModifiedBy?: string;
 
@@ -198,8 +215,11 @@ export class DbService {
   labResults = signal<LabResult[]>([]);
   sales = signal<Sale[]>([]);
   quotes = signal<Quote[]>([]);
+  parameters = signal<Parameter[]>([]);
   // Map profile_id -> Set of exam_ids
   profileExamsMap = signal<Record<string, string[]>>({});
+  // Map exam_id -> Set of parameter_ids (When an Exam has specific params like Urine/Stool)
+  examParametersMap = signal<Record<string, string[]>>({});
 
   // Computed statistics
   totalPatients = computed(() => this.patients().length);
@@ -344,7 +364,9 @@ export class DbService {
     this.fetchMethodologies();
     this.fetchIndications();
     this.fetchProfiles();
+    this.fetchProfiles();
     this.fetchExams();
+    this.fetchParameters();
     this.fetchResults();
     this.fetchDoctors();
     this.fetchAppointments();
@@ -424,6 +446,41 @@ export class DbService {
         this.profileExamsMap.set(mapping);
       }
 
+      // 3. Fetch ExamParameter Relations
+      const { data: paramData } = await this.supabase
+        .from('exam_parameters')
+        .select('parent_exam_id, parameter_id');
+
+      if (paramData) {
+        const pMap: Record<string, string[]> = {};
+        paramData.forEach((item: any) => {
+          if (!pMap[item.parent_exam_id]) pMap[item.parent_exam_id] = [];
+          pMap[item.parent_exam_id].push(item.parameter_id);
+        });
+        this.examParametersMap.set(pMap);
+      }
+
+    } catch (e) { }
+  }
+
+  async fetchParameters() {
+    try {
+      const { data: paramsData, error } = await this.supabase
+        .from(TBL_PARAMETERS)
+        .select(`
+          *,
+          creator:users!parameters_createdBy_fkey(name),
+          modifier:users!parameters_lastModifiedBy_fkey(name)
+        `)
+        .order('name');
+
+      if (error) {
+        // Fallback if relation names differ
+        const { data: simpleData } = await this.supabase.from(TBL_PARAMETERS).select('*').order('name');
+        if (simpleData) this.parameters.set(simpleData as Parameter[]);
+      } else if (paramsData) {
+        this.parameters.set(paramsData as Parameter[]);
+      }
     } catch (e) { }
   }
 
@@ -564,7 +621,9 @@ export class DbService {
     if (error) console.error('Error adding exam:', error);
     if (data) {
       this.exams.update(list => [...list, data as Exam]);
+      return data as Exam;
     }
+    return null;
   }
 
   async updateExam(id: string, updated: Partial<Exam>) {
@@ -589,6 +648,64 @@ export class DbService {
     const { error } = await this.supabase.from(TBL_EXAMS).delete().eq('id', id);
     if (!error) {
       this.exams.update(list => list.filter(e => e.id !== id));
+    }
+  }
+
+  async addParameter(p: Parameter) {
+    const payload = { ...p, createdBy: this.currentUser()?.id };
+    delete (payload as any).id;
+    delete (payload as any).price; // Parameters do not have price
+    delete (payload as any).is_parameter;
+    delete (payload as any).methodology_id;
+    delete (payload as any).indication_id;
+    delete (payload as any).creator;
+    delete (payload as any).modifier;
+
+    const { data, error } = await this.supabase
+      .from(TBL_PARAMETERS)
+      .insert(payload)
+      .select('*, creator:users!parameters_createdBy_fkey(name), modifier:users!parameters_lastModifiedBy_fkey(name)')
+      .single();
+
+    if (error) console.error('Error adding parameter:', error);
+    if (data) {
+      this.parameters.update(list => [...list, data as Parameter]);
+      return data as Parameter;
+    }
+    // Fallback if select fail due to keys
+    if (!data && !error) return null;
+    // If error was just FK select, we might still have inserted?
+    // Usually insert(...).select(...) fails atomically if select fails? 
+    // Supabase returns error.
+    return null;
+  }
+
+  async updateParameter(id: string, updated: Partial<Parameter>) {
+    const changes = { ...updated, lastModifiedBy: this.currentUser()?.id };
+    delete (changes as any).creator;
+    delete (changes as any).modifier;
+    delete (changes as any).price; // Parameters do not have price
+    delete (changes as any).is_parameter;
+    delete (changes as any).methodology_id;
+    delete (changes as any).indication_id;
+
+    const { data, error } = await this.supabase
+      .from(TBL_PARAMETERS)
+      .update(changes)
+      .eq('id', id)
+      .select('*, creator:users!parameters_createdBy_fkey(name), modifier:users!parameters_lastModifiedBy_fkey(name)')
+      .single();
+
+    if (error) console.error('Error updating parameter:', error);
+    if (data) {
+      this.parameters.update(list => list.map(p => p.id === id ? (data as Parameter) : p));
+    }
+  }
+
+  async deleteParameter(id: string) {
+    const { error } = await this.supabase.from(TBL_PARAMETERS).delete().eq('id', id);
+    if (!error) {
+      this.parameters.update(list => list.filter(p => p.id !== id));
     }
   }
 
@@ -734,6 +851,31 @@ export class DbService {
       await this.fetchExams();
     } catch (error) {
       console.error('Error in assignExamsToProfile:', error);
+    }
+  }
+
+  async assignParametersToExam(parentExamId: string, parameterIds: string[]) {
+    try {
+      await this.supabase
+        .from('exam_parameters')
+        .delete()
+        .eq('parent_exam_id', parentExamId);
+
+      if (parameterIds.length > 0) {
+        const rows = parameterIds.map(pid => ({
+          parent_exam_id: parentExamId,
+          parameter_id: pid
+        }));
+
+        const { error } = await this.supabase
+          .from('exam_parameters')
+          .insert(rows);
+
+        if (error) throw error;
+      }
+      await this.fetchExams();
+    } catch (error) {
+      console.error('Error in assignParametersToExam:', error);
     }
   }
 

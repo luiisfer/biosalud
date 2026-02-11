@@ -80,6 +80,9 @@ import { DbService, Exam } from '../../../core/services/db.service';
           <button (click)="openForm('exam')" class="bg-[#3498db] hover:bg-[#2980b9] text-white px-4 py-2 transition-colors flex items-center gap-2 font-medium">
              <i class="fas fa-vial"></i> + Examen
           </button>
+          <button (click)="openForm('parameter')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 transition-colors flex items-center gap-2 font-medium">
+             <i class="fas fa-list-ul"></i> + Parámetro
+          </button>
           <button (click)="openForm('indication')" class="bg-[#e67e22] hover:bg-[#d35400] text-white px-4 py-2 transition-colors flex items-center gap-2 font-medium">
              <i class="fas fa-info-circle"></i> + Indicación
           </button>
@@ -210,31 +213,27 @@ import { DbService, Exam } from '../../../core/services/db.service';
         <div class="bg-white p-8 border border-slate-200 mb-8 animate-fade-in border-l-4 border-[#3498db]">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-lg font-bold text-slate-700">
-              {{ editingId() ? 'Editar Examen' : 'Nuevo Examen Individual' }}
+              {{ editingId() ? (examForm.get('is_parameter')?.value ? 'Editar Parámetro' : 'Editar Examen') : (examForm.get('is_parameter')?.value ? 'Nuevo Parámetro' : 'Nuevo Examen') }}
             </h2>
             <button (click)="closeForm()" class="text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
           </div>
           <form [formGroup]="examForm" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nombre del Examen</label>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">{{ examForm.get('is_parameter')?.value ? 'Nombre del Parámetro' : 'Nombre del Examen' }}</label>
               <input formControlName="name" type="text" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Código Interno</label>
               <input formControlName="code" type="text" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
             </div>
-            <div class="md:col-span-2 bg-slate-50 p-3 rounded border border-slate-200 flex items-center gap-3">
-               <input formControlName="is_parameter" type="checkbox" id="is_parameter" class="w-5 h-5 text-[#3498db] rounded border-slate-300 focus:ring-[#3498db]">
-               <div>
-                  <label for="is_parameter" class="block text-sm font-bold text-slate-700 cursor-pointer select-none">Es un Parámetro / Componente</label>
-                  <p class="text-xs text-slate-400">Marcar si este ítem es parte de un perfil (ej. "Color" en Orina) y no un examen cobrable por sí solo.</p>
-               </div>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Precio (Q)</label>
-              <input formControlName="price" type="number" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
-            </div>
+
+            @if (!examForm.get('is_parameter')?.value) {
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Precio (Q)</label>
+                <input formControlName="price" type="number" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
+              </div>
+            }
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Rango General</label>
@@ -256,31 +255,77 @@ import { DbService, Exam } from '../../../core/services/db.service';
                   <input formControlName="range_female" type="text" placeholder="Ej: 60-100" class="w-full p-2 bg-white border border-slate-200 focus:border-[#3498db] outline-none transition-colors text-slate-700 text-sm">
                </div>
             </div>
-            <div class="md:col-span-2">
-               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Metodología (Opcional)</label>
-               <select formControlName="methodology_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
-                  <option [value]="null">Sin Metodología</option>
-                  @for (m of db.methodologies(); track m.id) {
-                     <option [value]="m.id">{{ m.name }}</option>
-                  }
-               </select>
-            </div>
-            <div class="md:col-span-2">
-               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Indicación / Prep. Paciente (Opcional)</label>
-               <select formControlName="indication_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
-                  <option [value]="null">Sin Indicación</option>
-                  @for (i of db.indications(); track i.id) {
-                     <option [value]="i.id">{{ i.name }}</option>
-                  }
-               </select>
-            </div>
+            @if (!examForm.get('is_parameter')?.value) {
+              <div class="md:col-span-2">
+                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Metodología (Opcional)</label>
+                 <select formControlName="methodology_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
+                    <option [value]="null">Sin Metodología</option>
+                    @for (m of db.methodologies(); track m.id) {
+                       <option [value]="m.id">{{ m.name }}</option>
+                    }
+                 </select>
+              </div>
+              <div class="md:col-span-2">
+                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Indicación / Prep. Paciente (Opcional)</label>
+                 <select formControlName="indication_id" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700">
+                    <option [value]="null">Sin Indicación</option>
+                    @for (i of db.indications(); track i.id) {
+                       <option [value]="i.id">{{ i.name }}</option>
+                    }
+                 </select>
+              </div>
+            }
             <div class="md:col-span-2">
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Descripción</label>
               <textarea formControlName="description" rows="3" class="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700"></textarea>
             </div>
+
+            <!-- Parameter Selection for Exams -->
+            @if (!examForm.get('is_parameter')?.value) {
+               <div class="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Asignar Parámetros al Examen (Opcional)</label>
+                  <p class="text-[10px] text-slate-400 mb-2">Seleccione los parámetros que componen este examen (Ej. Para Hematología, Orina, etc).</p>
+                  
+                  <div class="relative mb-2">
+                     <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                     <input 
+                        [value]="parameterSelectionSearch()"
+                        (input)="parameterSelectionSearch.set($any($event.target).value)"
+                        type="text" 
+                        placeholder="Buscar parámetros..." 
+                        class="w-full pl-8 p-2 text-sm bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 rounded">
+                  </div>
+
+                  <div class="h-48 overflow-y-auto border border-slate-200 rounded bg-white">
+                     @for (ex of filteredParametersForSelection(); track ex.id) {
+                        <div 
+                           (click)="toggleParameter(ex.id)"
+                           class="flex items-center p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors">
+                           <div 
+                              [class.bg-[#3498db]]="selectedParameters().has(ex.id)"
+                              [class.border-[#3498db]]="selectedParameters().has(ex.id)"
+                              class="w-4 h-4 border border-slate-300 rounded flex items-center justify-center mr-3 transition-colors bg-white">
+                              @if (selectedParameters().has(ex.id)) {
+                                 <i class="fas fa-check text-white text-[10px]"></i>
+                              }
+                           </div>
+                           <div class="flex-1">
+                              <div class="text-xs font-bold text-slate-700">{{ ex.name }}</div>
+                              <div class="text-[10px] text-slate-400 font-mono">{{ ex.code }}</div>
+                           </div>
+                        </div>
+                     } @empty {
+                        <div class="p-4 text-center text-xs text-slate-400">No se encontraron parámetros definidos.</div>
+                     }
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-1 text-right">
+                     {{ selectedParameters().size }} parámetros seleccionados
+                  </div>
+               </div>
+            }
             <div class="md:col-span-2 flex justify-end">
                <button type="submit" [disabled]="examForm.invalid" class="bg-[#1abc9c] text-white px-8 py-3 hover:bg-[#16a085] disabled:opacity-50 disabled:cursor-not-allowed font-bold uppercase text-sm tracking-wide transition-colors">
-                  {{ editingId() ? 'Actualizar Examen' : 'Guardar Examen' }}
+                  {{ editingId() ? (examForm.get('is_parameter')?.value ? 'Actualizar Parámetro' : 'Actualizar Examen') : (examForm.get('is_parameter')?.value ? 'Guardar Parámetro' : 'Guardar Examen') }}
                </button>
             </div>
           </form>
@@ -309,6 +354,12 @@ import { DbService, Exam } from '../../../core/services/db.service';
               <i class="fas fa-vial"></i> Exámenes
             </button>
             <button 
+              (click)="view.set('parameter')" 
+              [class]="view() === 'parameter' ? 'bg-white shadow text-purple-600' : 'text-slate-500 hover:text-slate-700'"
+              class="px-4 py-1.5 rounded-md text-xs font-bold uppercase transition-all flex items-center gap-2">
+              <i class="fas fa-list-ul"></i> Parámetros
+            </button>
+            <button 
               (click)="view.set('indication')" 
               [class]="view() === 'indication' ? 'bg-white shadow text-[#e67e22]' : 'text-slate-500 hover:text-slate-700'"
               class="px-4 py-1.5 rounded-md text-xs font-bold uppercase transition-all flex items-center gap-2">
@@ -321,7 +372,7 @@ import { DbService, Exam } from '../../../core/services/db.service';
             <input 
               (input)="updateSearch($event)" 
               type="text" 
-              [placeholder]="'Buscar ' + (view() === 'exam' ? 'exámenes' : view() === 'profile' ? 'perfiles' : view() === 'methodology' ? 'metodologías' : 'indicaciones') + '...'" 
+              [placeholder]="'Buscar ' + (view() === 'exam' ? 'exámenes' : view() === 'parameter' ? 'parámetros' : view() === 'profile' ? 'perfiles' : view() === 'methodology' ? 'metodologías' : 'indicaciones') + '...'" 
               class="w-full pl-10 p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#3498db] outline-none transition-colors text-slate-700 rounded-sm">
          </div>
          <div class="text-xs text-slate-500 font-bold uppercase tracking-wider whitespace-nowrap">
@@ -333,12 +384,14 @@ import { DbService, Exam } from '../../../core/services/db.service';
         <table class="w-full text-left border-collapse">
           <thead class="bg-slate-50 text-slate-500 uppercase text-xs font-bold tracking-wider">
             <tr>
-              @if (view() === 'exam') {
+              @if (view() === 'exam' || view() === 'parameter') {
                 <th class="p-4 border-b border-slate-200">Código</th>
-                <th class="p-4 border-b border-slate-200">Examen</th>
+                <th class="p-4 border-b border-slate-200">Examen / Parámetro</th>
                 <th class="p-4 border-b border-slate-200">Perfil / Metodología</th>
                 <th class="p-4 border-b border-slate-200">Rango / Unidad</th>
-                <th class="p-4 border-b border-slate-200">Precio</th>
+                @if (view() === 'exam') {
+                  <th class="p-4 border-b border-slate-200">Precio</th>
+                }
                 <th class="p-4 border-b border-slate-200">Registro</th>
               } @else if (view() === 'profile') {
                 <th class="p-4 border-b border-slate-200">Nombre del Perfil</th>
@@ -363,7 +416,7 @@ import { DbService, Exam } from '../../../core/services/db.service';
                 class="hover:bg-slate-50 transition-colors cursor-pointer"
                 [title]="view() === 'profile' ? 'Doble clic para ver exámenes del perfil' : ''"
               >
-                @if (view() === 'exam') {
+                @if (view() === 'exam' || view() === 'parameter') {
                   <td class="p-4 text-slate-400 font-mono text-sm font-bold">{{ item.code }}</td>
                   <td class="p-4">
                     <div class="flex items-center gap-2">
@@ -410,7 +463,9 @@ import { DbService, Exam } from '../../../core/services/db.service';
                     <span class="block font-mono font-bold">{{ item.range }}</span>
                     <span class="block text-[10px] text-slate-400">{{ item.unit }}</span>
                   </td>
-                  <td class="p-4 text-slate-700 font-mono font-bold">Q{{ item.price | number:'1.2-2' }}</td>
+                  @if (view() === 'exam') {
+                    <td class="p-4 text-slate-700 font-mono font-bold">Q{{ item.price | number:'1.2-2' }}</td>
+                  }
                   <td class="p-4 text-slate-500 text-sm">
                     <div class="flex flex-col gap-1">
                       <span class="inline-flex items-center gap-1">
@@ -537,9 +592,26 @@ export class ExamsComponent {
 
   filteredExamsForSelection = computed(() => {
     const term = this.examSelectionSearch().toLowerCase();
+    // Exclude parameters, show only exams? Or should profiles also contain profiles?
+    // Profiles contain Exams (is_parameter=false) OR Parameters (is_parameter=true)?
+    // The previous logic just returned all exams.
+    // If we are in Profile form, we want to select Exams (often is_parameter=false) but maybe parameters too?
+    // Let's assume Profile can contain anything from exams table.
     return this.db.exams().filter(e =>
       e.name.toLowerCase().includes(term) ||
       (e.code && e.code.toLowerCase().includes(term))
+    );
+  });
+
+  // Parameter Selection State for Exams
+  selectedParameters = signal<Set<string>>(new Set());
+  parameterSelectionSearch = signal('');
+
+  filteredParametersForSelection = computed(() => {
+    const term = this.parameterSelectionSearch().toLowerCase();
+    return this.db.parameters().filter(p =>
+      p.name.toLowerCase().includes(term) ||
+      (p.code && p.code.toLowerCase().includes(term))
     );
   });
 
@@ -574,7 +646,7 @@ export class ExamsComponent {
     indication_id: [null as string | null]
   });
 
-  view = signal<'exam' | 'profile' | 'methodology' | 'indication'>('exam');
+  view = signal<'exam' | 'profile' | 'methodology' | 'indication' | 'parameter'>('exam');
 
   // Computed Filtered List
   filteredData = computed(() => {
@@ -583,6 +655,7 @@ export class ExamsComponent {
 
     let list: any[] = [];
     if (currentView === 'exam') list = this.db.exams();
+    else if (currentView === 'parameter') list = this.db.parameters();
     else if (currentView === 'profile') list = this.db.profiles();
     else if (currentView === 'methodology') list = this.db.methodologies();
     else if (currentView === 'indication') list = this.db.indications();
@@ -627,8 +700,21 @@ export class ExamsComponent {
   }
   // --------------------------
 
-  openForm(type: 'exam' | 'profile' | 'methodology' | 'indication') {
-    this.activeForm.set(type);
+  openForm(type: 'exam' | 'profile' | 'methodology' | 'indication' | 'parameter') {
+    if (type === 'parameter') {
+      this.activeForm.set('exam');
+      this.examForm.patchValue({ is_parameter: true });
+      this.examForm.get('price')?.clearValidators();
+      this.examForm.get('price')?.setValidators([Validators.min(0)]);
+      this.examForm.get('price')?.updateValueAndValidity();
+    } else {
+      this.activeForm.set(type);
+      if (type === 'exam') {
+        this.examForm.patchValue({ is_parameter: false });
+        this.examForm.get('price')?.setValidators([Validators.required, Validators.min(0)]);
+        this.examForm.get('price')?.updateValueAndValidity();
+      }
+    }
     this.editingId.set(null);
   }
 
@@ -643,8 +729,11 @@ export class ExamsComponent {
     this.profileForm.reset();
     this.methodologyForm.reset();
     this.indicationForm.reset();
+    this.indicationForm.reset();
     this.selectedExams.set(new Set());
+    this.selectedParameters.set(new Set());
     this.examSelectionSearch.set('');
+    this.parameterSelectionSearch.set('');
   }
 
   toggleExam(examId: string) {
@@ -656,11 +745,28 @@ export class ExamsComponent {
     });
   }
 
+  toggleParameter(paramId: string) {
+    this.selectedParameters.update(set => {
+      const newSet = new Set(set);
+      if (newSet.has(paramId)) newSet.delete(paramId);
+      else newSet.add(paramId);
+      return newSet;
+    });
+  }
+
   onEdit(item: any) {
     const currentView = this.view();
     this.editingId.set(item.id);
 
-    if (currentView === 'exam') {
+    if (currentView === 'exam' || currentView === 'parameter') {
+      if (currentView === 'parameter') {
+        this.examForm.get('price')?.clearValidators();
+        this.examForm.get('price')?.setValidators([Validators.min(0)]);
+      } else {
+        this.examForm.get('price')?.setValidators([Validators.required, Validators.min(0)]);
+      }
+      this.examForm.get('price')?.updateValueAndValidity();
+
       this.examForm.patchValue({
         name: item.name,
         code: item.code,
@@ -670,10 +776,17 @@ export class ExamsComponent {
         range_female: item.range_female,
         unit: item.unit,
         description: item.description,
-        is_parameter: item.is_parameter || false,
+        is_parameter: currentView === 'parameter' ? true : (item.is_parameter || false),
         methodology_id: item.methodology_id || null,
         indication_id: item.indication_id || null
       });
+
+      // Load parameters if it's an exam
+      if (!item.is_parameter) {
+        const associatedParams = this.db.examParametersMap()[item.id] || [];
+        this.selectedParameters.set(new Set(associatedParams));
+      }
+
       this.activeForm.set('exam');
     } else if (currentView === 'profile') {
       this.profileForm.patchValue({
@@ -718,6 +831,7 @@ export class ExamsComponent {
     const currentView = this.view();
 
     if (currentView === 'exam') await this.db.deleteExam(id);
+    else if (currentView === 'parameter') await this.db.deleteParameter(id);
     else if (currentView === 'profile') await this.db.deleteProfile(id);
     else if (currentView === 'methodology') await this.db.deleteMethodology(id);
     else if (currentView === 'indication') await this.db.deleteIndication(id);
@@ -801,16 +915,39 @@ export class ExamsComponent {
   async onSubmit() {
     if (this.examForm.valid) {
       const formValue = this.examForm.value;
+      const isParameter = this.examForm.get('is_parameter')?.value;
 
-      if (this.editingId()) {
-        this.db.updateExam(this.editingId()!, formValue as any);
-      } else {
-        const newExam: Exam = {
-          id: '', // DB handles this
-          ...formValue as any
-        };
-        this.db.addExam(newExam);
+      // Parameter Logic
+      if (isParameter) {
+        // No price logic needed as parameters don't have price.
+        if (this.editingId()) {
+          await this.db.updateParameter(this.editingId()!, formValue as any);
+        } else {
+          await this.db.addParameter(formValue as any);
+        }
+        this.closeForm();
+        return;
       }
+
+      // Exam Logic
+      formValue.is_parameter = false;
+
+      let savedExamId: string | null = null;
+      if (this.editingId()) {
+        await this.db.updateExam(this.editingId()!, formValue as any);
+        savedExamId = this.editingId();
+      } else {
+        const newExam: any = { // Using any cast to simplify
+          ...formValue
+        };
+        const result = await this.db.addExam(newExam);
+        if (result) savedExamId = result.id;
+      }
+
+      if (savedExamId) {
+        await this.db.assignParametersToExam(savedExamId, Array.from(this.selectedParameters()));
+      }
+
       this.closeForm();
     }
   }
